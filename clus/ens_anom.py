@@ -14,7 +14,7 @@ def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extrem
     (it can be the percentile, mean, maximum, standard deviation or trend)
     OUTPUT: NetCDF files of ensemble mean of climatology, selected value and anomaly maps.
     '''
-    
+
     # User-defined packages
     from read_netcdf import read3Dncfield, save_N_2Dfields
     from sel_season_area import sel_season, sel_area
@@ -36,25 +36,29 @@ def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extrem
         ifile=filenames[ens]
         print('ENSEMBLE MEMBER %s' %ens)
         var, varunits, lat, lon, dates, time_units = read3Dncfield(ifile)
-    
+
         #____________Convertion from kg m-2 s-1 to mm/day
         if varunits=='kg m-2 s-1':
             var=var*86400  #there are 86400 seconds in a day
             varunitsnew='mm/day'
         else:
             varunitsnew=varunits
-    
+
         #____________Selecting a season (DJF,DJFM,NDJFM,JJA)
-        var_season,dates_season=sel_season(var,dates,season)
-        
+        if season is not None:
+            var_season,dates_season=sel_season(var,dates,season)
+        else:
+            var_season = var
+            dates_season = dates
+
         #____________Selecting only [latS-latN, lonW-lonE] box region
         var_area,lat_area,lon_area=sel_area(lat,lon,var_season,area)
-        
+
         var_ens.append(var_area)
-    
+
     if varunitsnew=='mm/day':
         print('\nPrecipitation rate units are converted from kg m-2 s-1 to mm/day')
-    
+
     print('The variable is {0} ({1})'.format(varname,varunitsnew))
     print('Original var shape: (time x lat x lon)={0}'.format(var.shape))
     print('var shape after selecting season {0}: (time x lat x lon)={1}'.format(season,var_season.shape))
@@ -71,17 +75,17 @@ def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extrem
         # PERCENTILE
         q=int(extreme.partition("th")[0])
         varextreme_ens=[np.percentile(var_ens[i],q,axis=0) for i in range(numens)]
-    
+
     elif extreme=='maximum':
         #____________Compute the maximum value over the period, for each ensemble member
         # MAXIMUM
         varextreme_ens=[np.max(var_ens[i],axis=0) for i in range(numens)]
-    
+
     elif extreme=='std':
         #____________Compute the standard deviation over the period, for each ensemble member
         # STANDARD DEVIATION
         varextreme_ens=[np.std(var_ens[i],axis=0) for i in range(numens)]
-    
+
     elif extreme=='trend':
         #____________Compute the linear trend over the period, for each ensemble member
         # TREND
@@ -101,9 +105,9 @@ def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extrem
     print(len(varextreme_ens),varextreme_ens[0].shape)
     varextreme_ens_np=np.array(varextreme_ens)
     print(varextreme_ens_np.shape)
-    print('\n------------------------------------------------------------')    
+    print('\n------------------------------------------------------------')
     print('Anomalies are computed with respect to the {0}'.format(extreme))
-    print('------------------------------------------------------------\n')    
+    print('------------------------------------------------------------\n')
 
     #____________Compute and save the anomalies with respect to the ensemble
     ens_anomalies=varextreme_ens_np-np.mean(varextreme_ens_np,axis=0)
@@ -122,7 +126,7 @@ def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extrem
     #print(ofile)
     print('Save the climatology:')
     save_N_2Dfields(lat_area,lon_area,ens_climatologies,varsave,varunitsnew,ofile)
-    
+
     #____________Save the extreme
     ens_extreme=varextreme_ens_np
     varsave='ens_extreme'
@@ -130,7 +134,7 @@ def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extrem
     #print(ofile)
     print('Save the extreme:')
     save_N_2Dfields(lat_area,lon_area,ens_extreme,varsave,varunitsnew,ofile)
-    
+
 
     return
 
@@ -138,7 +142,7 @@ def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extrem
 
 if __name__ == '__main__':
     print('This program is being run by itself')
-    
+
     print('**************************************************************')
     print('Running {0}'.format(sys.argv[0]))
     print('**************************************************************')
@@ -155,4 +159,3 @@ if __name__ == '__main__':
 
 else:
     print('ens_anom is being imported from another module')
-

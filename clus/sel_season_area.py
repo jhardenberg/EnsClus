@@ -1,5 +1,6 @@
 # Standard packages
-from netCDF4 import Dataset, num2date, datetime
+from netCDF4 import Dataset, num2date
+import datetime
 import numpy as np
 import pandas as pd
 
@@ -32,7 +33,7 @@ def sel_season(var,dates,season):
         start=int(np.where(dates_season==datetime(dates_pdh.year[0], m[0], dates_pdh.day[0], dates_pdh.hour[0], dates_pdh.minute[0]))[0])
         #REMOVING THE LAST MONTHS (for the last year) because there is no following january
         end=int(np.where(dates_season==datetime(dates_pdh.year[-1], m[0], dates_pdh.day[0], dates_pdh.hour[0], dates_pdh.minute[0]))[0])
-              
+
         var_season=var_season[start:end,:,:]
         dates_season=dates_season[start:end]
 
@@ -61,7 +62,7 @@ def sel_area(lat,lon,var,area):
         else:
             var_roll=var
             lon_new=lon
-    
+
     elif area=='PNA':
         printarea='Pacific North American'
         latN = 87.5
@@ -100,7 +101,21 @@ def sel_area(lat,lon,var,area):
         else:
             var_roll=var
             lon_new=lon
-    
+    elif area=='Med':
+        printarea='Mediterranean'
+        latN = 48.0
+        latS = 25.0
+        lonW = -7.0
+        lonE = 40.0
+        # lat and lon are extracted from the netcdf file, assumed to be 1D
+        #If 0<lon<360, convert to -180<lon<180
+        if lon.min() >= 0:
+            lon_new=lon-180
+            var_roll=np.roll(var,int(len(lon)/2),axis=2)
+        else:
+            var_roll=var
+            lon_new=lon
+
     #----------------------------------------------------------------------------------------
     #print('____________________________________________________________________________________________________________________')
     #print('Selecting the area of interest: {0}'.format(printarea))
@@ -109,10 +124,8 @@ def sel_area(lat,lon,var,area):
 
     latidx = (lat >= latS) & (lat <= latN)
     lonidx = (lon_new >= lonW) & (lon_new <= lonE)
-    
+
     var_area = var_roll[:, latidx][..., lonidx]
     #print('Grid dimension of the selected area ---> {0}'.format(var_area[0].shape))
-    
+
     return var_area,lat[latidx],lon_new[lonidx]
-
-

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3 
+#!/usr/bin/env python3
 
 '''
 ;;#############################################################################
@@ -7,7 +7,7 @@
 ;; Copernicus C3S 34a lot 2 (MAGIC)
 ;;#############################################################################
 ;; Description
-;;    Cluster analysis tool based on the k-means algorithm 
+;;    Cluster analysis tool based on the k-means algorithm
 ;;    for ensembles of climate model simulations
 ;;
 ;; Modules called: ens_anom.py and ens_eof_kmeans.py
@@ -22,18 +22,8 @@
 import os
 import sys
 
-# Information required by the CLUStool:
-#-------------------------------about paths------------------------------------------
-# Input data directory:
-INPUT_PATH='/home/mavilia/DATA/historical/prRegrid/'
-# Input file names included the common string:
-string='pr_Amon'
-
-# OUTPUT directory
-dir_OUTPUT='/home/mavilia/MAGIC/'
-
 # CLUStool directory
-dir_CLUStool='/home/mavilia/MAGIC/EnsClus/clus/'
+dir_CLUStool='/home/fabiano/Research/git/EnsClus/clus/'
 
 # User-defined packages
 sys.path.insert(0,dir_CLUStool)
@@ -41,24 +31,37 @@ from ens_anom import ens_anom
 from ens_eof_kmeans import ens_eof_kmeans
 from ens_plots import ens_plots
 
+# Information required by the CLUStool:
+#-------------------------------about paths------------------------------------------
+# Input data directory:
+INPUT_PATH='/home/fabiano/DATA/Medscope/seasonal_forecasts/input_par167_1ens/'
+# Input file names included the common string:
+string = 'spred_2011_nov_ens'
+
+# OUTPUT directory
+dir_OUTPUT='/home/fabiano/Research/lavori/MedscopeEnsClus/Winter_2012_4clus/'
+if not os.path.exists(dir_OUTPUT):
+    os.mkdir(dir_OUTPUT)
+
+
 #-------------------------------about data-------------------------------------------
 # Write only letters or numbers, no punctuation marks!
-# If you want to leave the field empty write 'no' 
-varname='pr'                #variable name in the file
-model='ECEARTH31'           #model name ECEARTH31 NCEPNCAR ERAInterim
+# If you want to leave the field empty write 'no'
+varname='2t'                #variable name in the file
+model='Medscope'           #model name ECEARTH31 NCEPNCAR ERAInterim
 
 
-numens=60                   #total number of ensemble members
-season='JJA'                #seasonal average
-area='Eu'                   #regional average (examples:'EAT':Euro-Atlantic
+numens = 51                   #total number of ensemble members
+season = None                #seasonal average
+area = 'Med'                   #regional average (examples:'EAT':Euro-Atlantic
                             #                           'PNA': Pacific North American
                             #                           'NH': Northern Hemisphere)
                             #                           'Eu': Europe)
 kind='hist'                 #hist: historical, scen:scenario
-extreme='75th_percentile'   #75th_percentile, mean, maximum, std, trend
+extreme='mean'   #75th_percentile, mean, maximum, std, trend
 
 #---------------------about cluster analysis------------------------------------------
-numclus=6              #number of clusters
+numclus=4              #number of clusters
 #Either set perc or numpcs:
 perc=80                #cluster analysis is applied on a number of PCs such as they explain
                        #'perc' of total variance
@@ -69,7 +72,11 @@ field_to_plot='anomalies'     #field to plot ('climatologies', 'anomalies', '75t
 
 #____________Building the name of output files
 s = "_";
-seq = (varname,model,str(numens)+'ens',season,area,kind)
+if season is None:
+    sea = ''
+else:
+    sea = season
+seq = (varname,model,str(numens)+'ens',sea,area,kind)
 name_outputs=s.join(seq)
 #print('The name of the output files will be <variable>_{0}.ext'.format(name_outputs))
 
@@ -121,5 +128,3 @@ print('\n>>>>>>>>>>>> ENDED SUCCESSFULLY!! <<<<<<<<<<<<\n')
 
 sys.stdout = original
 f.close()
-
-

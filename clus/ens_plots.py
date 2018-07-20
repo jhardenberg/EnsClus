@@ -8,7 +8,8 @@ import sys
 from netCDF4 import Dataset
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap
+import cartopy.crs as ccrs
+#from mpl_toolkits.basemap import Basemap
 import math
 
 def ens_plots(dir_OUTPUT,name_outputs,numclus,field_to_plot):
@@ -17,8 +18,9 @@ def ens_plots(dir_OUTPUT,name_outputs,numclus,field_to_plot):
     Plot the chosen field for each ensemble
     NOTE:
     '''
-    
+
     # User-defined libraries
+    import matplotlib.path as mpath
     from read_netcdf import read_N_2Dfields
 
     # OUTPUT DIRECTORY
@@ -64,48 +66,75 @@ def ens_plots(dir_OUTPUT,name_outputs,numclus,field_to_plot):
         delta=0.2
         rangecbarmin=math.floor(mi)
         rangecbarmax=math.ceil(ma)+delta
-    
+
     clevels=np.arange(rangecbarmin,rangecbarmax,delta)
     #clevels=np.arange(2,44,delta)
     #clevels=np.arange(-0.7,0.75,delta)
     #clevels=np.arange(0,6.2,delta)
-    
+
     colors=['b','g','r','c','m','y','DarkOrange','grey']
-    m = Basemap(projection='cyl',llcrnrlat=min(lat),urcrnrlat=max(lat),llcrnrlon=min(lon),urcrnrlon=max(lon),resolution='c')
+
+    clat=lat.min()+abs(lat.max()-lat.min())/2
+    clon=lon.min()+abs(lon.max()-lon.min())/2
+
+    boundary = np.array([[lat.min(),lon.min()], [lat.max(),lon.min()], [lat.max(),lon.max()], [lat.min(),lon.max()]])
+    bound = mpath.Path(boundary)
+
+    #proj = ccrs.Orthographic(central_longitude=clon, central_latitude=clat)
+
+    proj = ccrs.PlateCarree()
+
+    #m = Basemap(projection='cyl',llcrnrlat=min(lat),urcrnrlat=max(lat),llcrnrlon=min(lon),urcrnrlon=max(lon),resolution='c')
+
     fig = plt.figure(figsize=(24,14))
     for nens in range(numens):
         #print('//////////ENSEMBLE MEMBER {0}'.format(nens))
-        ax = plt.subplot(6, 10, nens+1)
-    
-        m.drawcoastlines()
+        ax = plt.subplot(6, 10, nens+1, projection=proj)
+
+        #m.drawcoastlines()
+        ax.set_global()
+        ax.coastlines()
+
         # use meshgrid to create 2D arrays
-        x_i,y_i=np.meshgrid(lon,lat)
-        xi,yi=m(x_i,y_i)
-        
+        xi,yi=np.meshgrid(lon,lat)
+        #x_i,y_i=np.meshgrid(lon,lat)
+        #xi,yi=m(x_i,y_i)
+
         # Plot Data
         if field_to_plot=='anomalies':
-            map_plot=m.contourf(xi,yi,vartoplot[nens],clevels,cmap=plt.cm.RdBu_r)
+            #map_plot=m.contourf(xi,yi,vartoplot[nens],clevels,cmap=plt.cm.RdBu_r)
+            map_plot = ax.contourf(xi,yi,vartoplot[nens],clevels,cmap=plt.cm.RdBu_r, transform = proj)
         else:
-            map_plot=m.contourf(xi,yi,vartoplot[nens],clevels)
+            map_plot = ax.contourf(xi,yi,vartoplot[nens],clevels, transform = proj)
+
+        #ax.set_boundary(bound, transform = proj)
+        latlonlim = [lon.min(), lon.max(), lat.min(), lat.max()]
+        ax.set_extent(latlonlim, crs = proj)
+        print('Setting limits: ', latlonlim)
+
+        # proj_to_data = proj._as_mpl_transform(ax) - ax.transData
+        # rect_in_target = proj_to_data.transform_path(bound)
+        # ax.set_boundary(rect_in_target)
+
         #print('min={0}'.format(vartoplot[nens].min()))
         #print('max={0}\n'.format(vartoplot[nens].max()))
-    
+
         # Add Title
         subtit = nens
         title_obj=plt.title(subtit, fontsize=32, fontweight='bold')
         for nclus in range(numclus):
             if nens in np.where(labels==nclus)[0]:
                 title_obj.set_backgroundcolor(colors[nclus])
-    
+
     cax = plt.axes([0.1, 0.03, 0.8, 0.03]) #horizontal
     cb=plt.colorbar(map_plot,cax=cax, orientation='horizontal')#, labelsize=18)
     cb.ax.tick_params(labelsize=18)
-    
+
     plt.suptitle(kind+' '+varname+' '+tit+' ('+varunits+')', fontsize=45, fontweight='bold')
     #plt.suptitle(kind+' (2038-2068) JJA 2m temperature '+tit+' (degC)', fontsize=45, fontweight='bold')
     #plt.suptitle(kind+' (1979-2008) JJA 2m temperature '+tit+' (degC)', fontsize=45, fontweight='bold')
     #plt.suptitle(kind+' (1979-2008) JJA precipitation rate '+tit+' (mm/day)', fontsize=45, fontweight='bold')
-    
+
     plt.subplots_adjust(top=0.85)
     top    = 0.89  # the top of the subplots of the figure
     bottom = 0.12    # the bottom of the subplots of the figure
@@ -114,7 +143,7 @@ def ens_plots(dir_OUTPUT,name_outputs,numclus,field_to_plot):
     hspace = 0.36   # the amount of height reserved for white space between subplots
     wspace = 0.14    # the amount of width reserved for blank space between subplots
     plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
-    
+
     # plot the selected fields
     namef=os.path.join(OUTPUTdir,'{0}_{1}.eps'.format(field_to_plot,name_outputs))
     fig.savefig(namef)#bbox_inches='tight')
@@ -128,7 +157,7 @@ def ens_plots(dir_OUTPUT,name_outputs,numclus,field_to_plot):
 
 if __name__ == '__main__':
     print('This program is being run by itself')
-    
+
     print('**************************************************************')
     print('Running {0}'.format(sys.argv[0]))
     print('**************************************************************')
@@ -141,4 +170,3 @@ if __name__ == '__main__':
 
 else:
     print('ens_plots is being imported from another module')
-

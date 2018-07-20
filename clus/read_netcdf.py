@@ -1,5 +1,5 @@
 # Standard packages
-from netCDF4 import Dataset, num2date, date2num, datetime
+from netCDF4 import Dataset, num2date, date2num
 import numpy as np
 import os
 
@@ -30,9 +30,9 @@ def read3Dncfield(ifile):
     #print(fh.variables)
     dates=num2date(time,time_units)
     fh.close()
-       
+
     #print('\n'+txt)
-       
+
     return var, var_units, lat, lon, dates, time_units
 
 
@@ -49,28 +49,28 @@ def save_N_2Dfields(lats,lons,variab,varname,varunits,ofile):
         pass
     dataset = Dataset(ofile, 'w', format='NETCDF4_CLASSIC')
     #print(dataset.file_format)
-    
+
     num = dataset.createDimension('num', variab.shape[0])
     lat = dataset.createDimension('lat', variab.shape[1])
     lon = dataset.createDimension('lon', variab.shape[2])
-    
+
     # Create coordinate variables for 3-dimensions
     num = dataset.createVariable('num', np.int32, ('num',))
     lat = dataset.createVariable('lat', np.float32, ('lat',))
     lon = dataset.createVariable('lon', np.float32, ('lon',))
     # Create the actual 3-d variable
     var = dataset.createVariable(varname, np.float64,('num','lat','lon'))
-    
+
     #print('variable:', dataset.variables[varname])
-    
+
     #for varn in dataset.variables.keys():
     #    print(varn)
     # Variable Attributes
     lat.units='degree_north'
     lon.units='degree_east'
     var.units = varunits
-    
-    num[:]=np.arange(variab.shape[0])    
+
+    num[:]=np.arange(variab.shape[0])
     lat[:]=lats
     lon[:]=lons
     var[:,:,:]=variab
@@ -95,7 +95,7 @@ def read_N_2Dfields(ifile):
     for variab in fh.variables:
         variabs.append(variab)
     #print('The variables in the nc file are: ', variabs)
-    
+
     num         = fh.variables['num'][:]
     lat         = fh.variables['lat'][:]
     lon         = fh.variables['lon'][:]
@@ -104,8 +104,7 @@ def read_N_2Dfields(ifile):
     txt='{0} dimension [num x lat x lon]: {1}'.format(variabs[3],var.shape)
     #print(fh.variables)
     fh.close()
-       
-    #print('\n'+txt)
-       
-    return var, var_units, lat, lon
 
+    #print('\n'+txt)
+
+    return var, var_units, lat, lon
