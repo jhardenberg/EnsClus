@@ -12,44 +12,40 @@ import math
 import pandas as pd
 import collections
 
-def ens_eof_kmeans(dir_OUTPUT,name_outputs,numens,numpcs,perc,numclus):
+def ens_eof_kmeans(inputs):
     '''
-    \nGOAL:
     Find the most representative ensemble member for each cluster.
     METHODS:
     - Empirical Orthogonal Function (EOF) analysis of the input file
     - K-means cluster analysis applied to the retained Principal Components (PCs)
-    OUTPUT:
-    Frequency
+
+    TODO:
+    - Order clusters per frequency
+    - Give the anomalies in input (not from file)
+
     '''
 
     # User-defined libraries
     from read_netcdf import read_N_2Dfields
     from eof_tool import eof_computation
 
-    print('***********************************OUTPUT***********************************')
-    print('The name of the output files will be <variable>_{0}.txt'.format(name_outputs))
-    print('Number of ensemble members: {0}'.format(numens))
-    # OUTPUT DIRECTORY
-    OUTPUTdir=dir_OUTPUT+'OUTPUT/'
-    if not os.path.exists(OUTPUTdir):
-        os.mkdir(OUTPUTdir)
-        print('The output directory {0} is created'.format(OUTPUTdir))
-    else:
-        print('The output directory {0} already exists'.format(OUTPUTdir))
-    model=name_outputs.split("_")[1]
-    print('Model: {0}'.format(model))
+    OUTPUTdir = inputs['OUTPUTdir']
+    numens = inputs['numens']
+    name_outputs = inputs['name_outputs']
+    filenames = inputs['filenames']
+    numpcs = inputs['numpcs']
+    perc = inputs['perc']
+    numclus = inputs['numclus']
+
     # Either perc (cluster analysis is applied on a number of PCs such as they explain
     # 'perc' of total variance) or numpcs (number of PCs to retain) is set:
-    if numpcs!='no':
-        numpcs=int(numpcs)
+    if numpcs is not None:
         print('Number of principal components: {0}'.format(numpcs))
 
-    if perc!='no':
-        perc=int(perc)
-        print('Percentage of explained variance: {0}%'.format(perc))
+    if perc is not None:
+        print('Percentage of explained variance: {0}%'.format(int(perc)))
 
-    if (perc=='no' and numpcs=='no') or (perc!='no' and numpcs!='no'):
+    if (perc is None and numpcs is None) or (perc is not None and numpcs is not None):
         raise ValueError('You have to specify either "perc" or "numpcs".')
 
     print('Number of clusters: {0}'.format(numclus))
@@ -68,21 +64,21 @@ def ens_eof_kmeans(dir_OUTPUT,name_outputs,numens,numpcs,perc,numclus):
     solver, pcs_scal1, eofs_scal2, pcs_unscal0, eofs_unscal0, varfrac = eof_computation(var,varunits,lat,lon)
 
     acc=np.cumsum(varfrac*100)
-    if perc!='no':
+    if perc is not None:
         # Find how many PCs explain a certain percentage of variance
         # (find the mode relative to the percentage closest to perc, but bigger than perc)
         numpcs=min(enumerate(acc), key=lambda x: x[1]<=perc)[0]+1
         print('\nThe number of PCs that explain the percentage closest to {0}% of variance (but grater than {0}%) is {1}'.format(perc,numpcs))
         exctperc=min(enumerate(acc), key=lambda x: x[1]<=perc)[1]
-    if numpcs!='no':
+    if numpcs is not None:
         exctperc=acc[numpcs-1]
     print('(the first {0} PCs explain exactly the {1}% of variance)'.format(numpcs,"%.2f" %exctperc))
 
 
     #____________Compute k-means analysis using a subset of PCs
-    print('____________________________________________________________________________________________________________________')
+    print('__________________________________________________\n')
     print('k-means analysis using a subset of PCs')
-    print('____________________________________________________________________________________________________________________')
+    print('_____________________________________________\n')
     #----------------------------------------------------------------------------------------
     PCs=pcs_unscal0[:,:numpcs]
 
@@ -194,25 +190,25 @@ def ens_eof_kmeans(dir_OUTPUT,name_outputs,numens,numpcs,perc,numclus):
     with open(namef, 'w') as text_file:
         text_file.write(statOUTPUT.__repr__())
 
-    return ens_mindist, ens_maxdist
+    return centroids, labels, ens_mindist, ens_maxdist
 
 
 #========================================================
 
-if __name__ == '__main__':
-    print('This program is being run by itself')
-
-    print('**************************************************************')
-    print('Running {0}'.format(sys.argv[0]))
-    print('**************************************************************')
-    dir_OUTPUT    = sys.argv[1]  # OUTPUT DIRECTORY
-    name_outputs  = sys.argv[2]  # name of the outputs
-    numens        = int(sys.argv[3])  # number of ensemble members
-    numpcs        = sys.argv[4]  # number of retained PCs
-    perc          = sys.argv[5]  # percentage of explained variance by PCs
-    numclus       = int(sys.argv[6])  # number of clusters
-
-    ens_eof_kmeans(dir_OUTPUT,name_outputs,numens,numpcs,perc,numclus)
-
-else:
-    print('ens_eof_kmeans is being imported from another module')
+# if __name__ == '__main__':
+#     print('This program is being run by itself')
+#
+#     print('**************************************************************')
+#     print('Running {0}'.format(sys.argv[0]))
+#     print('**************************************************************')
+#     dir_OUTPUT    = sys.argv[1]  # OUTPUT DIRECTORY
+#     name_outputs  = sys.argv[2]  # name of the outputs
+#     numens        = int(sys.argv[3])  # number of ensemble members
+#     numpcs        = sys.argv[4]  # number of retained PCs
+#     perc          = sys.argv[5]  # percentage of explained variance by PCs
+#     numclus       = int(sys.argv[6])  # number of clusters
+#
+#     ens_eof_kmeans(dir_OUTPUT,name_outputs,numens,numpcs,perc,numclus)
+#
+# else:
+#     print('ens_eof_kmeans is being imported from another module')

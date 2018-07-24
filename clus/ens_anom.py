@@ -9,7 +9,7 @@ import os
 from scipy import stats
 import pickle
 
-def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extreme, timestep, climat_file = None):
+def ens_anom(inputs):
     '''
     \nGOAL: Computation of the ensemble anomalies based on the desired value from the input variable
     (it can be the percentile, mean, maximum, standard deviation or trend)
@@ -20,16 +20,17 @@ def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extrem
     from read_netcdf import read3Dncfield, save_N_2Dfields
     from sel_season_area import sel_season, sel_area
 
-    print('***********************************OUTPUT***********************************')
+    OUTPUTdir = inputs['OUTPUTdir']
+    numens = inputs['numens']
+    name_outputs = inputs['name_outputs']
+    filenames = inputs['filenames']
+    season = inputs['season']
+    area = inputs['area']
+    varname = inputs['varname']
+    extreme = inputs['extreme']
+
     print('The name of the output files will be <variable>_{0}.txt'.format(name_outputs))
     print('Number of ensemble members: {0}'.format(numens))
-    # OUTPUT DIRECTORY
-    OUTPUTdir=dir_OUTPUT+'OUTPUT/'
-    if not os.path.exists(OUTPUTdir):
-        os.mkdir(OUTPUTdir)
-        print('The output directory {0} is created'.format(OUTPUTdir))
-    else:
-        print('The output directory {0} already exists'.format(OUTPUTdir))
 
     #____________Reading the netCDF file of 3Dfield, for all the ensemble members
     var_ens=[]
@@ -57,13 +58,6 @@ def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extrem
         var_area,lat_area,lon_area=sel_area(lat,lon,var_season,area)
 
         var_ens.append(var_area)
-
-    cliamtology_area = None
-    if climat_file is not None:
-        all_fields, climat_mean, climat_std = pickle.load(open(climat_file, 'rb'))
-        climatology = np.mean(climat_mean['nov'][:3,:,:], axis = 0)
-
-        climatology_area, _, _ = sel_area(lat,lon,climatology,area)
 
     if varunitsnew=='mm/day':
         print('\nPrecipitation rate units are converted from kg m-2 s-1 to mm/day')
@@ -145,26 +139,26 @@ def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extrem
     print('Save the extreme:')
     save_N_2Dfields(lat_area,lon_area,ens_extreme,varsave,varunitsnew,ofile)
 
-    return climatology_area, ensemble_mean
+    return varextreme_ens_np, vartimemean_ens, ensemble_mean
 
 #========================================================
 
-if __name__ == '__main__':
-    print('This program is being run by itself')
-
-    print('**************************************************************')
-    print('Running {0}'.format(sys.argv[0]))
-    print('**************************************************************')
-    filenames     = sys.argv[1].split()  # input file names
-    dir_OUTPUT    = sys.argv[2]          # OUTPUT DIRECTORY
-    name_outputs  = sys.argv[3]          # name of the outputs
-    varname       = sys.argv[4]          # variable name
-    numens        = int(sys.argv[5])     # number of ensemble members
-    season        = sys.argv[6]          # seasonal average
-    area          = sys.argv[7]          # regional average
-    extreme       = sys.argv[8]          # chosen extreme to investigate
-
-    ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extreme)
-
-else:
-    print('ens_anom is being imported from another module')
+# if __name__ == '__main__':
+#     print('This program is being run by itself')
+#
+#     print('**************************************************************')
+#     print('Running {0}'.format(sys.argv[0]))
+#     print('**************************************************************')
+#     filenames     = sys.argv[1].split()  # input file names
+#     dir_OUTPUT    = sys.argv[2]          # OUTPUT DIRECTORY
+#     name_outputs  = sys.argv[3]          # name of the outputs
+#     varname       = sys.argv[4]          # variable name
+#     numens        = int(sys.argv[5])     # number of ensemble members
+#     season        = sys.argv[6]          # seasonal average
+#     area          = sys.argv[7]          # regional average
+#     extreme       = sys.argv[8]          # chosen extreme to investigate
+#
+#     ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extreme)
+#
+# else:
+#     print('ens_anom is being imported from another module')
