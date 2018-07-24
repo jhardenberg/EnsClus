@@ -1,0 +1,106 @@
+Input file for mainCLUStool.py.
+
+##################################################################
+##################### REQUIRED INPUT PATHS/NAMES (have to be set!) #################
+
+# Directory that contains all files to be analized
+[INPUT_PATH]
+/home/fabiano/DATA/Medscope/seasonal_forecasts/input_par167_1ens/
+
+# Common string to all file_names to be analized inside INPUT_PATH. If not specified all files in the directory will be considered.
+[string_name]
+spred_2011_nov_ens
+
+# Output data directory
+[dir_OUTPUT]
+/home/fabiano/Research/lavori/MedscopeEnsClus/
+
+# Name of this run
+[exp_name]
+Winter_2012
+
+# Overwrite output files if already present in the same folder? (if not sure, leave this as False)
+[overwrite_output]
+True
+
+# Name of the dataset (ECEARTH, ERA, NCEP)
+[model]
+Medscope
+
+##########################################################################
+##############  reference FILES  ################
+
+# Compare with the model climatology?
+[clim_compare]
+True
+
+# File that contains the model climatology.
+[climat_file]
+/home/fabiano/DATA/Medscope/seasonal_forecasts/all_fields_climat_167.p
+
+# Compare with Observations?
+[obs_compare]
+True
+
+# Observation file.
+[obs_file]
+/home/fabiano/DATA/Medscope/ERAInterim_1d5/ERAInterim_MSMM_167_grid150.nc
+
+##########################################################################
+##############  options for EOFs/CLUSTERING  ################
+
+# Number of EOFs to be used in the decomposition:
+#[numpcs]
+4
+
+# Percentage of variance explained by the EOFs considered. Number of EOFs used in the decomposition is calculated by program.
+[perc]
+80
+
+
+# Number of clusters to be used:
+[numclus]
+4
+
+##########################################################################
+############## Options for the analysis ################
+
+# Name of the variable to be extracted from the fields
+[varname]
+2t
+
+# Atmospheric level at which the variable is extracted (if more levels are present)
+#[level]
+500
+
+# Season to be selected (options: JJA, DJF, DJFM, NDJFM, MAM, SON)
+[season]
+DJF
+
+# Regional average ('EAT': Euro-Atlantic, 'PNA': Pacific North American, 'NH': Northern Hemisphere, 'Med': Mediterranean, 'Eu': Europe)
+# Area to be selected
+[area]
+Med
+
+# Data frequency (options: day, month)
+[timestep]
+month
+
+# Type of pattern to consider. The choice is between: '**th_percentile', 'mean', 'maximum', 'std', 'trend'. For the percentile, the actual number has to be specified in the key value: if the 75th percentile is desired, the right key is '75th_percentile'.
+[extreme]
+mean
+
+##########################################################################
+###################  Options for plots and visualization  ###################
+
+# Number of color levels to be used in the contour plots.
+[n_color_levels]
+21
+
+# Draw contour lines?
+[draw_contour_lines]
+False
+
+# Number of levels to be used for the contour lines.
+[n_levels]
+5
