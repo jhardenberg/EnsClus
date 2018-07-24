@@ -1,11 +1,11 @@
 # Standard packages
 from netCDF4 import Dataset, num2date
-import datetime
+from datetime import datetime
 import numpy as np
 import pandas as pd
 
 #____________Selecting a season (DJF,DJFM,NDJFM,JJA)
-def sel_season(var,dates,season):
+def sel_season(var,dates,season,timestep):
     #----------------------------------------------------------------------------------------
     #print('____________________________________________________________________________________________________________________')
     #print('Selecting only {0} data'.format(season))
@@ -23,19 +23,37 @@ def sel_season(var,dates,season):
     elif season=='JJA':   #ONLY JUN-JUL-AUG
         m=[6,7,8]
         mask=(dates_pdh.month==6) | (dates_pdh.month==7) | (dates_pdh.month==8)
+    elif season=='MAM':   #ONLY MAR-APR-MAY
+        m=[3,4,5]
+        mask=(dates_pdh.month==6) | (dates_pdh.month==7) | (dates_pdh.month==8)
+    elif season=='SON':   #ONLY SEP-OCT-NOV
+        m=[9,10,11]
+        mask=(dates_pdh.month==6) | (dates_pdh.month==7) | (dates_pdh.month==8)
     else:
-        print('season is not one of the following: DJF, DJFM, NDJFM, JJA')
+        print('season is not one of the following: DJF, DJFM, NDJFM, JJA, MAM, SON')
     var_season = var[mask,:,:]
     dates_season=dates[mask]
 
-    if (12 in m) or (1 in m):
-        #REMOVING THE FIRST MONTHS (for the first year) because there is no previuos december
-        start=int(np.where(dates_season==datetime(dates_pdh.year[0], m[0], dates_pdh.day[0], dates_pdh.hour[0], dates_pdh.minute[0]))[0])
-        #REMOVING THE LAST MONTHS (for the last year) because there is no following january
-        end=int(np.where(dates_season==datetime(dates_pdh.year[-1], m[0], dates_pdh.day[0], dates_pdh.hour[0], dates_pdh.minute[0]))[0])
+    cut = False
+    if timestep == 'month':
+        # count number of months
+        n_months = var_season.shape[0]
+        if n_months%len(season) != 0:
+            cut = True
+    elif timestep == 'day':
+        cut = True
 
-        var_season=var_season[start:end,:,:]
-        dates_season=dates_season[start:end]
+    if cut:
+        if (12 in m) or (1 in m):
+            #REMOVING THE FIRST MONTHS (for the first year) because there is no previuos december
+            print(np.where(dates_season==datetime(dates_pdh.year[0], m[0], dates_pdh.day[0], dates_pdh.hour[0], dates_pdh.minute[0]) ))
+            start=int(np.where(dates_season==datetime(dates_pdh.year[0], m[0], dates_pdh.day[0], dates_pdh.hour[0], dates_pdh.minute[0]) )[0])
+            #REMOVING THE LAST MONTHS (for the last year) because there is no following january
+            print(np.where(dates_season==datetime(dates_pdh.year[-1], m[0], dates_pdh.day[0], dates_pdh.hour[0], dates_pdh.minute[0]) ))
+            end=int(np.where(dates_season == datetime(dates_pdh.year[-1], m[0], dates_pdh.day[0], dates_pdh.hour[0], dates_pdh.minute[0]) )[0])
+
+            var_season=var_season[start:end,:,:]
+            dates_season=dates_season[start:end]
 
     return var_season,dates_season
 
@@ -58,7 +76,7 @@ def sel_area(lat,lon,var,area):
         #If 0<lon<360, convert to -180<lon<180
         if lon.min() >= 0:
             lon_new=lon-180
-            var_roll=np.roll(var,int(len(lon)/2),axis=2)
+            var_roll=np.roll(var,int(len(lon)/2),axis=-1)
         else:
             var_roll=var
             lon_new=lon
@@ -73,7 +91,7 @@ def sel_area(lat,lon,var,area):
         #If -180<lon<180, convert to 0<lon<360
         if lon.min() < 0:
             lon_new=lon+180
-            var_roll=np.roll(var,int(len(lon)/2),axis=2)
+            var_roll=np.roll(var,int(len(lon)/2),axis=-1)
         else:
             var_roll=var
             lon_new=lon
@@ -97,21 +115,22 @@ def sel_area(lat,lon,var,area):
         #If 0<lon<360, convert to -180<lon<180
         if lon.min() >= 0:
             lon_new=lon-180
-            var_roll=np.roll(var,int(len(lon)/2),axis=2)
+            var_roll=np.roll(var,int(len(lon)/2),axis=-1)
         else:
             var_roll=var
             lon_new=lon
     elif area=='Med':
         printarea='Mediterranean'
-        latN = 48.0
+        latN = 50.0
         latS = 25.0
-        lonW = -7.0
+        lonW = -10.0
         lonE = 40.0
         # lat and lon are extracted from the netcdf file, assumed to be 1D
         #If 0<lon<360, convert to -180<lon<180
         if lon.min() >= 0:
             lon_new=lon-180
-            var_roll=np.roll(var,int(len(lon)/2),axis=2)
+            print(var.shape)
+            var_roll=np.roll(var,int(len(lon)/2),axis=-1)
         else:
             var_roll=var
             lon_new=lon
@@ -125,7 +144,14 @@ def sel_area(lat,lon,var,area):
     latidx = (lat >= latS) & (lat <= latN)
     lonidx = (lon_new >= lonW) & (lon_new <= lonE)
 
-    var_area = var_roll[:, latidx][..., lonidx]
+    print(var_roll.shape, len(latidx), len(lonidx))
+    if var.ndim == 3:
+        var_area = var_roll[:, latidx][..., lonidx]
+    elif var.ndim == 2:
+        var_area = var_roll[latidx, ...][..., lonidx]
+    else:
+        raise ValueError('Variable has {} dimensions, should have 2 or 3.'.format(var.ndim))
+
     #print('Grid dimension of the selected area ---> {0}'.format(var_area[0].shape))
 
     return var_area,lat[latidx],lon_new[lonidx]

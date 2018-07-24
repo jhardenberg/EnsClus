@@ -7,8 +7,9 @@ import numpy as np
 import sys
 import os
 from scipy import stats
+import pickle
 
-def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extreme):
+def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extreme, timestep, climat_file = None):
     '''
     \nGOAL: Computation of the ensemble anomalies based on the desired value from the input variable
     (it can be the percentile, mean, maximum, standard deviation or trend)
@@ -46,7 +47,8 @@ def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extrem
 
         #____________Selecting a season (DJF,DJFM,NDJFM,JJA)
         if season is not None:
-            var_season,dates_season=sel_season(var,dates,season)
+            var_season,dates_season=sel_season(var,dates,season,
+            timestep)
         else:
             var_season = var
             dates_season = dates
@@ -55,6 +57,13 @@ def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extrem
         var_area,lat_area,lon_area=sel_area(lat,lon,var_season,area)
 
         var_ens.append(var_area)
+
+    cliamtology_area = None
+    if climat_file is not None:
+        all_fields, climat_mean, climat_std = pickle.load(open(climat_file, 'rb'))
+        climatology = np.mean(climat_mean['nov'][:3,:,:], axis = 0)
+
+        climatology_area, _, _ = sel_area(lat,lon,climatology,area)
 
     if varunitsnew=='mm/day':
         print('\nPrecipitation rate units are converted from kg m-2 s-1 to mm/day')
@@ -109,6 +118,7 @@ def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extrem
     print('Anomalies are computed with respect to the {0}'.format(extreme))
     print('------------------------------------------------------------\n')
 
+    ensemble_mean = np.mean(varextreme_ens_np, axis = 0)
     #____________Compute and save the anomalies with respect to the ensemble
     ens_anomalies=varextreme_ens_np-np.mean(varextreme_ens_np,axis=0)
     varsave='ens_anomalies'
@@ -135,8 +145,7 @@ def ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extrem
     print('Save the extreme:')
     save_N_2Dfields(lat_area,lon_area,ens_extreme,varsave,varunitsnew,ofile)
 
-
-    return
+    return climatology_area, ensemble_mean
 
 #========================================================
 

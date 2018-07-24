@@ -43,6 +43,8 @@ dir_OUTPUT='/home/fabiano/Research/lavori/MedscopeEnsClus/Winter_2012_4clus/'
 if not os.path.exists(dir_OUTPUT):
     os.mkdir(dir_OUTPUT)
 
+par = 167
+climat_file = '/home/fabiano/DATA/Medscope/seasonal_forecasts/all_fields_climat_{}.p'.format(par)
 
 #-------------------------------about data-------------------------------------------
 # Write only letters or numbers, no punctuation marks!
@@ -50,9 +52,10 @@ if not os.path.exists(dir_OUTPUT):
 varname='2t'                #variable name in the file
 model='Medscope'           #model name ECEARTH31 NCEPNCAR ERAInterim
 
+timestep = 'month' # month, day
 
 numens = 51                   #total number of ensemble members
-season = None                #seasonal average
+season = 'DJF'                #seasonal average
 area = 'Med'                   #regional average (examples:'EAT':Euro-Atlantic
                             #                           'PNA': Pacific North American
                             #                           'NH': Northern Hemisphere)
@@ -71,7 +74,7 @@ numpcs='no'            #number of PCs
 field_to_plot='anomalies'     #field to plot ('climatologies', 'anomalies', '75th_percentile', 'mean', 'maximum', 'std', 'trend')
 
 #____________Building the name of output files
-s = "_";
+s = "_"
 if season is None:
     sea = ''
 else:
@@ -113,16 +116,15 @@ print('_____________________________\n')
 
 ####################### PRECOMPUTATION #######################################
 #____________run ens_anom as a module
-ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extreme)
+climatology, ensemble_mean = ens_anom(filenames,dir_OUTPUT,name_outputs,varname,numens,season,area,extreme, timestep, climat_file = climat_file)
 
 ####################### EOF AND K-MEANS ANALYSES #############################
 #____________run ens_eof_kmeans as a module
-ens_eof_kmeans(dir_OUTPUT,name_outputs,numens,numpcs,perc,numclus)
+ens_mindist, ens_maxdist = ens_eof_kmeans(dir_OUTPUT,name_outputs,numens,numpcs,perc,numclus)
 
 ####################### PLOT AND SAVE FIGURES ################################
 #____________run ens_plots as a module
-ens_plots(dir_OUTPUT,name_outputs,numclus,field_to_plot)
-
+ens_plots(dir_OUTPUT,name_outputs,numclus,field_to_plot, ens_mindist, climatology = climatology, ensemble_mean = ensemble_mean)
 
 print('\n>>>>>>>>>>>> ENDED SUCCESSFULLY!! <<<<<<<<<<<<\n')
 
