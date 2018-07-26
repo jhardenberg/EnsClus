@@ -1,23 +1,40 @@
 Input file for mainCLUStool.py.
 
+IMPORTANT NOTE: the value of the keys has to be written in the line that immediately follows the [key] label. If you don't want to set a key, comment it with a '#': #[key]. Commented lines are not considered.
+
 ##################################################################
 ##################### REQUIRED INPUT PATHS/NAMES (have to be set!) #################
-
-# Directory that contains all files to be analized
-[INPUT_PATH]
-/home/fabiano/DATA/Medscope/seasonal_forecasts/input_par167_1ens/
-
-# Common string to all file_names to be analized inside INPUT_PATH. If not specified all files in the directory will be considered.
-[string_name]
-spred_2011_nov_ens
 
 # Output data directory
 [dir_OUTPUT]
 /home/fabiano/Research/lavori/MedscopeEnsClus/
 
+# Directory that contains all files to be analized
+[INPUT_PATH]
+/home/fabiano/DATA/Medscope/seasonal_forecasts_1d5/input_par167_1ens/
+
+# Is this a Medscope run? If True, once determined the season and the year, the code automatically sets exp_name, string_name, climat_file and climat_std.
+[medscope_run]
+True
+
+# Season to be selected (options: JJA, DJF, DJFM, NDJFM, MAM, SON). The code accepts also single months, named in this way: Jan, Feb, Mar, ...
+[season]
+DJF
+
+# Only for MEDSCOPE runs.
+# Year of the prediction. (The year in which the season starts. For example, to analyze 2012 winter, year has to be set to 2011.)
+[medscope_year_pred]
+2011
+
+# Only for non-MEDSCOPE runs.
+# Common string to all file_names to be analized inside INPUT_PATH. If not specified all files in the directory will be considered.
+[string_name]
+spred_2003_may_ens
+
+# Only for non-MEDSCOPE runs.
 # Name of this run
 [exp_name]
-Winter_2012
+Aug_2003
 
 # Overwrite output files if already present in the same folder? (if not sure, leave this as False)
 [overwrite_output]
@@ -36,15 +53,23 @@ True
 
 # File that contains the model climatology.
 [climat_file]
-/home/fabiano/DATA/Medscope/seasonal_forecasts/all_fields_climat_167.p
+/home/fabiano/DATA/Medscope/seasonal_forecasts_1d5/input_par167_1ens/climatology_mean_nov_1993-2016.nc
+
+# File that contains the model climatology variance (std). If specified, the anomalies are plotted also in units of model sigma.
+[climat_std]
+/home/fabiano/DATA/Medscope/seasonal_forecasts_1d5/input_par167_1ens/climatology_std_nov_1993-2016.nc
+
+# Sigma of the model. If the climat_std file is specified, there is no need to set this key. Or, it is better not to.
+#[clim_sigma_value]
+#7.0
 
 # Compare with Observations?
 [obs_compare]
 True
 
-# Observation file.
+# Observation file. Anomalies with respect to the observed climatology.
 [obs_file]
-/home/fabiano/DATA/Medscope/ERAInterim_1d5/ERAInterim_MSMM_167_grid150.nc
+/home/fabiano/DATA/Medscope/ERAInterim_1d5/ERAInterim_anomalies_167_grid150.nc
 
 ##########################################################################
 ##############  options for EOFs/CLUSTERING  ################
@@ -73,10 +98,6 @@ True
 #[level]
 500
 
-# Season to be selected (options: JJA, DJF, DJFM, NDJFM, MAM, SON)
-[season]
-DJF
-
 # Regional average ('EAT': Euro-Atlantic, 'PNA': Pacific North American, 'NH': Northern Hemisphere, 'Med': Mediterranean, 'Eu': Europe)
 # Area to be selected
 [area]
@@ -104,3 +125,16 @@ False
 # Number of levels to be used for the contour lines.
 [n_levels]
 5
+
+# Colormap used for the contour plots.
+[cmap]
+RdBu_r
+
+# Colormap used for the cluster colors.
+[cmap_cluster]
+nipy_spectral
+
+
+# Label for the colorbar.
+[cb_label]
+Temperature anomaly (K)

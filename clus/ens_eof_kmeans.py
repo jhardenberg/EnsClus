@@ -72,6 +72,9 @@ def ens_eof_kmeans(inputs):
         exctperc=min(enumerate(acc), key=lambda x: x[1]<=perc)[1]
     if numpcs is not None:
         exctperc=acc[numpcs-1]
+    if np.isnan(exctperc):
+        print(acc)
+        raise ValueError('NaN in evaluation of variance explained by first pcs')
     print('(the first {0} PCs explain exactly the {1}% of variance)'.format(numpcs,"%.2f" %exctperc))
 
 

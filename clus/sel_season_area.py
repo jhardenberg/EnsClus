@@ -11,6 +11,10 @@ def sel_season(var,dates,season,timestep):
     #print('Selecting only {0} data'.format(season))
     #----------------------------------------------------------------------------------------
     dates_pdh = pd.to_datetime(dates)
+    print(dates_pdh)
+
+    mesi_short = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
     if season=='DJF':       #ONLY DEC-JAN-FEB
         m=[12,1,2]
         mask=(dates_pdh.month==12) | (dates_pdh.month==1) | (dates_pdh.month==2)
@@ -29,10 +33,17 @@ def sel_season(var,dates,season,timestep):
     elif season=='SON':   #ONLY SEP-OCT-NOV
         m=[9,10,11]
         mask=(dates_pdh.month==6) | (dates_pdh.month==7) | (dates_pdh.month==8)
+    elif season in mesi_short:
+        print(mesi_short.index(season)+1)
+        mask = (dates_pdh.month == mesi_short.index(season)+1)
     else:
         print('season is not one of the following: DJF, DJFM, NDJFM, JJA, MAM, SON')
+    #print(np.sum(mask))
     var_season = var[mask,:,:]
     dates_season=dates[mask]
+
+    if var_season.ndim == 2:
+        var_season = var_season[np.newaxis, :]
 
     cut = False
     if timestep == 'month':
@@ -42,6 +53,9 @@ def sel_season(var,dates,season,timestep):
             cut = True
     elif timestep == 'day':
         cut = True
+
+    if season in mesi_short:
+        cut = False
 
     if cut:
         if (12 in m) or (1 in m):

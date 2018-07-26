@@ -19,13 +19,18 @@
 # Standard packages
 import os
 import sys
-import lib_WRtool as lwr
+from read_inputs import read_inputs
+import numpy as np
+import pandas as pd
 
 # User-defined packages
-sys.path.insert(0, sys.argv[0]+'clus/')
+prog_folder = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0,prog_folder+'/clus/')
 from ens_anom import ens_anom
 from ens_eof_kmeans import ens_eof_kmeans
 from ens_plots import ens_plots
+from read_netcdf import read3Dncfield
+from sel_season_area import sel_season, sel_area
 
 
 ### Reading inputs from input file
@@ -34,9 +39,9 @@ if len(sys.argv) > 1:
 else:
     file_input = 'input_CLUStool.in'
 
-keys = 'INPUT_PATH string_name dir_OUTPUT exp_name varname model timestep level numens season area extreme numclus perc numpcs field_to_plot n_color_levels n_levels draw_contour_lines overwrite_output clim_compare obs_compare climat_file obs_file'
+keys = 'INPUT_PATH string_name dir_OUTPUT exp_name varname model timestep level season area extreme numclus perc numpcs field_to_plot n_color_levels n_levels draw_contour_lines overwrite_output clim_compare obs_compare climat_file climat_std obs_file cmap cmap_cluster clim_sigma_value cb_label medscope_run medscope_year_pred'
 keys = keys.split()
-itype = [str, str, str, str, str, str, str, float, int, str, str, str, int, float, int, str, int, int, bool, bool, bool, bool, str, str]
+itype = [str, str, str, str, str, str, str, float, str, str, str, int, float, int, str, int, int, bool, bool, bool, bool, str, str, str, str, str, float, str, bool, int]
 
 if len(itype) != len(keys):
     raise RuntimeError('Ill defined input keys in {}'.format(__file__))
@@ -44,16 +49,41 @@ itype = dict(zip(keys, itype))
 
 defaults = dict()
 defaults['numclus'] = 4 # 4 clusters
-defaults['numpcs'] = 4 # 4 pcs
 defaults['n_color_levels'] = 21
 defaults['n_levels'] = 5
 defaults['draw_contour_lines'] = False
 defaults['field_to_plot'] = 'anomalies'
 defaults['overwrite_output'] = False
 defaults['run_compare'] = False
+defaults['cmap'] = 'RdBu_r'
+defaults['cmap_cluster'] = 'nipy_spectral'
 
 
-inputs = lwr.read_inputs(file_input, keys, n_lines = None, itype = itype, defaults = defaults)
+inputs = read_inputs(file_input, keys, n_lines = None, itype = itype, defaults = defaults, verbose = True)
+
+if inputs['medscope_run']:
+    print('Medscope run active. Setting standard names.\n')
+    if inputs['medscope_year_pred'] is None:
+        raise ValueError('[medscope_year_pred] not set!')
+    season = inputs['season']
+    if season in ['DJF', 'MAM', 'DJFM', 'NDJFM', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May']:
+        month_pred = 'nov'
+        name_fold = 'win{}-{}'.format(inputs['medscope_year_pred'], inputs['medscope_year_pred']+1)
+    elif season in ['JJA', 'SON', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov']:
+        month_pred = 'may'
+        name_fold = 'sum{}'.format(inputs['medscope_year_pred'])
+    inputs['string_name'] = 'spred_{}_{}_ens'.format(inputs['medscope_year_pred'],month_pred)
+    print('Setting string_name: '+inputs['string_name']+'\n')
+
+    inputs['exp_name'] = season+'_'+name_fold
+    print('Setting exp_name: '+inputs['exp_name']+'\n')
+
+    inputs['climat_file'] = inputs['INPUT_PATH']+'climatology_mean_{}_1993-2016.nc'.format(month_pred)
+    print('Setting climat_file: '+inputs['climat_file']+'\n')
+
+    inputs['climat_std'] = inputs['INPUT_PATH']+'climatology_std_{}_1993-2016.nc'.format(month_pred)
+    print('Setting climat_std: '+inputs['climat_std']+'\n')
+
 
 OUTPUTdir=inputs['dir_OUTPUT']+'OUT_'+inputs['model']+'_'+inputs['exp_name']+'/'
 
@@ -82,16 +112,6 @@ else:
         B2.pack()
         top.mainloop()
 
-#____________Building the name of output files
-s = "_"
-if inputs['season'] is None:
-    sea = ''
-else:
-    sea = inputs['season']
-seq = (inputs['varname'],inputs['model'],str(inputs['numens'])+'ens',sea,inputs['area'])
-name_outputs=s.join(seq)
-
-inputs['name_outputs'] = name_outputs
 
 #print('The name of the output files will be <variable>_{0}.ext'.format(name_outputs))
 
@@ -112,6 +132,7 @@ original = sys.stdout
 sys.stdout = Tee(sys.stdout, f)
 
 #____________Building the array of file names
+
 fn = [i for i in os.listdir(inputs['INPUT_PATH']) \
     if os.path.isfile(os.path.join(inputs['INPUT_PATH'],i)) and inputs['string_name'] in i]
 filenames=[os.path.join(inputs['INPUT_PATH'],i) for i in fn]
@@ -125,41 +146,96 @@ print('_____________________________\n')
 
 
 inputs['filenames'] = filenames
+inputs['numens'] = len(filenames)
 inputs['OUTPUTdir'] = OUTPUTdir
+
+#____________Building the name of output files
+s = "_"
+season = inputs['season']
+if season is None:
+    sea = ''
+else:
+    sea = season
+seq = (inputs['varname'],inputs['model'],str(inputs['numens'])+'ens',sea,inputs['area'])
+name_outputs=s.join(seq)
+
+inputs['name_outputs'] = name_outputs
 
 ####################### PRECOMPUTATION #######################################
 #____________run ens_anom as a module
-varextreme_ens_np, vartimemean_ens, ensemble_mean = ens_anom(inputs)
+varextreme_ens_np, vartimemean_ens, ensemble_mean, dates = ens_anom(inputs)
+
+dates_pdh = pd.to_datetime(dates)
 
 climatology = None
 if inputs['clim_compare']:
-    if climat_file is None:
+    if inputs['climat_file'] is None:
         raise ValueError('climat_file not specified')
-    all_fields, climat_mean, climat_std = pickle.load(open(climat_file, 'rb'))
-    climatology = np.mean(climat_mean['nov'][:3,:,:], axis = 0)
+    var, lat, lon, dates_clim, time_units, var_units = read3Dncfield(inputs['climat_file'])
 
-    climatology, _, _ = sel_area(lat,lon,climatology,area)
+    if season is not None:
+        var_season, dates_season = sel_season(var, dates_clim, season,
+        inputs['timestep'])
+    else:
+        var_season = var
+        dates_season = dates_clim
+
+    climatology_tot, _, _ = sel_area(lat, lon, var_season, inputs['area'])
+    climatology = np.mean(climatology_tot, axis = 0)
+
+    if inputs['clim_sigma_value'] is None and inputs['climat_std'] is not None:
+        var, lat, lon, dates_clim, time_units, var_units = read3Dncfield(inputs['climat_std'])
+
+        if season is not None:
+            var_season, dates_season = sel_season(var, dates_clim, season, inputs['timestep'])
+        else:
+            var_season = var
+            dates_season = dates_clim
+
+        climatology_std_tot, _, _ = sel_area(lat, lon, var_season, inputs['area'])
+
+        climatology_std = np.mean(climatology_std_tot, axis = 0)
+
+        csv = np.mean(climatology_std)
+        inputs['clim_sigma_value'] = csv
+
+        if csv == 0. or np.isnan(csv):
+            raise ValueError('Problems in calculating model sigma')
 
 observation = None
 if inputs['obs_compare']:
-    if obs_file is None:
+    if inputs['obs_file'] is None:
         raise ValueError('obs_file not specified')
-    all_fields, climat_mean, climat_std = pickle.load(open(climat_file, 'rb'))
-    observation = np.mean(climat_mean['nov'][:3,:,:], axis = 0)
+    var, lat, lon, dates_obs, time_units, var_units = read3Dncfield(inputs['obs_file'])
+    ### I need to extract the right year
+    dates_obs_pdh = pd.to_datetime(dates_obs)
+    if inputs['timestep'] == 'month':
+        delta = pd.Timedelta(weeks=1)
+    elif inputs['timestep'] == 'day':
+        delta = pd.Timedelta(hours=12)
+    else:
+        raise ValueError('timestep not understood')
 
-    observation, _, _ = sel_area(lat,lon, observation,area)
+    mask = (dates_obs_pdh > dates_pdh[0] - delta) & (dates_obs_pdh < dates_pdh[-1] + delta)
+    var = var[mask,:,:]
+    dates_obs = dates_obs[mask]
+
+    if season is not None:
+        var_season, dates_season = sel_season(var, dates_obs, season, inputs['timestep'])
+    else:
+        var_season = var
+        dates_season = dates_obs
+    observation, _, _ = sel_area(lat, lon, var_season, inputs['area'])
+    observation = np.mean(observation, axis = 0)
 
 
 ####################### EOF AND K-MEANS ANALYSES #############################
 #____________run ens_eof_kmeans as a module
-ens_mindist, ens_maxdist = ens_eof_kmeans(inputs)
-
-
-
+centroids, labels, ens_mindist, ens_maxdist = ens_eof_kmeans(inputs)
 
 ####################### PLOT AND SAVE FIGURES ################################
 #____________run ens_plots as a module
-ens_plots(dir_OUTPUT,name_outputs,numclus,field_to_plot, ens_mindist, climatology = climatology, ensemble_mean = ensemble_mean)
+ens_plots(inputs, ens_mindist, climatology = climatology, ensemble_mean = ensemble_mean, observation = observation)
 
 print('\n>>>>>>>>>>>> ENDED SUCCESSFULLY!! <<<<<<<<<<<<\n')
 

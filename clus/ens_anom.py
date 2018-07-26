@@ -28,6 +28,7 @@ def ens_anom(inputs):
     area = inputs['area']
     varname = inputs['varname']
     extreme = inputs['extreme']
+    timestep = inputs['timestep']
 
     print('The name of the output files will be <variable>_{0}.txt'.format(name_outputs))
     print('Number of ensemble members: {0}'.format(numens))
@@ -37,7 +38,7 @@ def ens_anom(inputs):
     for ens in range(numens):
         ifile=filenames[ens]
         print('ENSEMBLE MEMBER %s' %ens)
-        var, varunits, lat, lon, dates, time_units = read3Dncfield(ifile)
+        var, lat, lon, dates, time_units, varunits = read3Dncfield(ifile)
 
         #____________Convertion from kg m-2 s-1 to mm/day
         if varunits=='kg m-2 s-1':
@@ -139,7 +140,7 @@ def ens_anom(inputs):
     print('Save the extreme:')
     save_N_2Dfields(lat_area,lon_area,ens_extreme,varsave,varunitsnew,ofile)
 
-    return varextreme_ens_np, vartimemean_ens, ensemble_mean
+    return varextreme_ens_np, vartimemean_ens, ensemble_mean, dates
 
 #========================================================
 
