@@ -21,7 +21,7 @@ def ens_plots(inputs, ens_mindist, climatology = None, ensemble_mean = None, obs
     '''
     # User-defined libraries
     import matplotlib.path as mpath
-    from read_netcdf import read_N_2Dfields
+    from read_netcdf import read_N_2Dfields, save_N_2Dfields
 
     cmappa = cm.get_cmap(inputs['cmap'])
     cmappa_clus = cm.get_cmap(inputs['cmap_cluster'])
