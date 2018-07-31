@@ -101,7 +101,17 @@ def ens_eof_kmeans(inputs):
 
     #____________Save labels
     namef=os.path.join(OUTPUTdir,'labels_{0}.txt'.format(name_outputs))
-    np.savetxt(namef,labels,fmt='%d')
+    #np.savetxt(namef,labels,fmt='%d')
+    filo = open(namef, 'w')
+    stringo = '{:6s} {:20s} {:8s}'.format('#', 'filename', 'cluster')
+    filo.write(stringo)
+    filo.write(' \n')
+    for filnam, ii, lab in zip(inputs['filenames'], range(numens), labels):
+        indr = filnam.rindex('/')
+        filnam = filnam[indr+1:]
+        stringo = '{:6d} {:20s} {:8d}'.format(ii, filnam, lab)
+        filo.write(stringo)
+    filo.close()
 
     #____________Compute cluster frequencies
     L=[]
@@ -154,7 +164,21 @@ def ens_eof_kmeans(inputs):
 
     #____________Save the most representative ensemble members
     namef=os.path.join(OUTPUTdir,'repr_ens_{0}.txt'.format(name_outputs))
-    np.savetxt(namef,repres,fmt='%i')
+    filo = open(namef, 'w')
+    filo.write('List of cluster representatives\n')
+    stringo = '{:10s} {:8s} -> {:20s}\n'.format('', '#', 'filename')
+    filo.write(stringo)
+    filo.write(' \n')
+    for ii in range(numclus):
+        okin = repres[ii]
+        filnam = inputs['filenames'][okin]
+        indr = filnam.rindex('/')
+        filnam = filnam[indr+1:]
+        stringo = 'Cluster {:2d}: {:8d} -> {:20s}\n'.format(ii, okin, filnam)
+        filo.write(stringo)
+    filo.close()
+    #np.savetxt(namef,repres,fmt='%i')
+
 
     print('____________________________________________________________________________________________________________________')
     print('In order to study the spread of each cluster,')

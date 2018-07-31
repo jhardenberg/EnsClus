@@ -72,6 +72,10 @@ def ens_plots(inputs, ens_mindist, climatology = None, ensemble_mean = None, obs
 
     # print(vartoplot2.shape)
     # print(vartoplot.shape)
+    ofile = OUTPUTdir + 'Clusters_closest_ensmember.nc'
+    print('Saving clustern anomalies (vs model climatology)\n')
+    okins = [cos[0] for cos in ens_mindist]
+    save_N_2Dfields(lat,lon,vartoplot[okins],'clus_anom_closer',varunitsnew,ofile)
 
     #____________Load labels
     namef=os.path.join(OUTPUTdir,'labels_{0}.txt'.format(name_outputs))
@@ -105,10 +109,13 @@ def ens_plots(inputs, ens_mindist, climatology = None, ensemble_mean = None, obs
 
     proj = ccrs.PlateCarree()
 
+    side1 = int(np.ceil(np.sqrt(numens)))
+    side2 = int(np.ceil(numens/float(side1)))
+
     fig = plt.figure(figsize=(24,14))
     for nens in range(numens):
         #print('//////////ENSEMBLE MEMBER {0}'.format(nens))
-        ax = plt.subplot(6, 10, nens+1, projection=proj)
+        ax = plt.subplot(side1, side2, nens+1, projection=proj)
         ax.set_global()
         ax.coastlines()
 

@@ -135,6 +135,7 @@ sys.stdout = Tee(sys.stdout, f)
 
 fn = [i for i in os.listdir(inputs['INPUT_PATH']) \
     if os.path.isfile(os.path.join(inputs['INPUT_PATH'],i)) and inputs['string_name'] in i]
+fn.sort()
 filenames=[os.path.join(inputs['INPUT_PATH'],i) for i in fn]
 
 print('\n***************************INPUT*************')
