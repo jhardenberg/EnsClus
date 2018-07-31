@@ -103,13 +103,13 @@ def ens_eof_kmeans(inputs):
     namef=os.path.join(OUTPUTdir,'labels_{0}.txt'.format(name_outputs))
     #np.savetxt(namef,labels,fmt='%d')
     filo = open(namef, 'w')
-    stringo = '{:6s} {:20s} {:8s}'.format('#', 'filename', 'cluster')
+    stringo = '{:6s} {:20s} {:8s}\n'.format('#', 'filename', 'cluster')
     filo.write(stringo)
     filo.write(' \n')
     for filnam, ii, lab in zip(inputs['filenames'], range(numens), labels):
         indr = filnam.rindex('/')
         filnam = filnam[indr+1:]
-        stringo = '{:6d} {:20s} {:8d}'.format(ii, filnam, lab)
+        stringo = '{:6d} {:20s} {:8d}\n'.format(ii, filnam, lab)
         filo.write(stringo)
     filo.close()
 
