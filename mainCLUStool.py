@@ -236,7 +236,7 @@ centroids, labels, ens_mindist, ens_maxdist = ens_eof_kmeans(inputs)
 
 ####################### PLOT AND SAVE FIGURES ################################
 #____________run ens_plots as a module
-ens_plots(inputs, ens_mindist, climatology = climatology, ensemble_mean = ensemble_mean, observation = observation)
+ens_plots(inputs, labels, ens_mindist, climatology = climatology, ensemble_mean = ensemble_mean, observation = observation)
 
 print('\n>>>>>>>>>>>> ENDED SUCCESSFULLY!! <<<<<<<<<<<<\n')
 

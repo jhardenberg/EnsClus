@@ -13,7 +13,7 @@ import cartopy.crs as ccrs
 #from mpl_toolkits.basemap import Basemap
 import math
 
-def ens_plots(inputs, ens_mindist, climatology = None, ensemble_mean = None, observation = None):
+def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = None, observation = None):
     '''
     \nGOAL:
     Plot the chosen field for each ensemble
@@ -78,9 +78,9 @@ def ens_plots(inputs, ens_mindist, climatology = None, ensemble_mean = None, obs
     save_N_2Dfields(lat,lon,vartoplot[okins],'clus_anom_closer',varunits,ofile)
 
     #____________Load labels
-    namef=os.path.join(OUTPUTdir,'labels_{0}.txt'.format(name_outputs))
-    labels=np.loadtxt(namef,dtype=int)
-    print(labels)
+    # namef=os.path.join(OUTPUTdir,'labels_{0}.txt'.format(name_outputs))
+    # labels=np.loadtxt(namef,dtype=int)
+    # print(labels)
 
     mi = np.percentile(vartoplot, 5)
     ma = np.percentile(vartoplot, 95)
