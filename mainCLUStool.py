@@ -39,9 +39,9 @@ if len(sys.argv) > 1:
 else:
     file_input = 'input_CLUStool.in'
 
-keys = 'INPUT_PATH string_name dir_OUTPUT exp_name varname model timestep level season area extreme numclus perc numpcs field_to_plot n_color_levels n_levels draw_contour_lines overwrite_output clim_compare obs_compare climat_file climat_std obs_file cmap cmap_cluster clim_sigma_value cb_label medscope_run medscope_year_pred'
+keys = 'INPUT_PATH string_name dir_OUTPUT exp_name varname model timestep level season area extreme numclus perc numpcs field_to_plot n_color_levels n_levels draw_contour_lines overwrite_output clim_compare obs_compare climat_file climat_std obs_file cmap cmap_cluster clim_sigma_value cb_label medscope_run medscope_year_pred fig_format max_ens_in_fig'
 keys = keys.split()
-itype = [str, str, str, str, str, str, str, float, str, str, str, int, float, int, str, int, int, bool, bool, bool, bool, str, str, str, str, str, float, str, bool, int]
+itype = [str, str, str, str, str, str, str, float, str, str, str, int, float, int, str, int, int, bool, bool, bool, bool, str, str, str, str, str, float, str, bool, int, str, int]
 
 if len(itype) != len(keys):
     raise RuntimeError('Ill defined input keys in {}'.format(__file__))
@@ -57,6 +57,8 @@ defaults['overwrite_output'] = False
 defaults['run_compare'] = False
 defaults['cmap'] = 'RdBu_r'
 defaults['cmap_cluster'] = 'nipy_spectral'
+defaults['fig_format'] = 'pdf'
+defaults['max_ens_in_fig'] = 30
 
 
 inputs = read_inputs(file_input, keys, n_lines = None, itype = itype, defaults = defaults, verbose = True)

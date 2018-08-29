@@ -95,6 +95,24 @@ def ens_eof_kmeans(inputs):
     centroids=clus.cluster_centers_          # shape---> (numclus,numpcs)
     labels=clus.labels_                      # shape---> (numens,)
 
+    ## Ordering clusters for number of members
+    centroids = np.array(centroids)
+    labels = np.array(labels)
+
+    num_mem = []
+    for i in range(numclus):
+        num_mem.append(np.sum(labels == i))
+    num_mem = np.array(num_mem)
+
+    new_ord = num_mem.argsort()[::-1]
+    centroids = centroids[new_ord]
+
+    labels_new = np.array(labels)
+    for nu, i in zip(range(numclus), new_ord):
+        labels_new[labels == i] = nu
+    labels = labels_new
+    ###
+
     print('\nClusters are identified for {0} PCs (explained variance {1}%)'.format(numpcs, "%.2f" %exctperc))
     print('PCs dim: (number of ensemble members, number of PCs)={0}, EOF dim: (number of ensemble members, lat, lon)={1}'.format(pcs_unscal0[:,:numpcs].shape,eofs_unscal0[:numpcs].shape))
     print('Centroid coordinates dim: (number of clusters, number of PCs)={0}, labels dim: (number of ensemble members,)={1}\n'.format(centroids.shape,labels.shape))
