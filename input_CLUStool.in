@@ -11,7 +11,7 @@ IMPORTANT NOTE: the value of the keys has to be written in the line that immedia
 
 # Directory that contains all files to be analized
 [INPUT_PATH]
-/home/fabiano/DATA/Medscope/seasonal_forecasts_1d5/input_par167_1ens/
+/home/fabiano/DATA/Medscope/seasonal_forecasts_1d5/input_par228_1ens/
 
 # Is this a Medscope run? If True, once determined the season and the year, the code automatically sets exp_name, string_name, climat_file and climat_std.
 [medscope_run]
@@ -65,7 +65,7 @@ True
 
 # Compare with Observations?
 [obs_compare]
-True
+False
 
 # Observation file. Anomalies with respect to the observed climatology.
 [obs_file]
@@ -75,11 +75,11 @@ True
 ##############  options for EOFs/CLUSTERING  ################
 
 # Number of EOFs to be used in the decomposition:
-#[numpcs]
+[numpcs]
 4
 
 # Percentage of variance explained by the EOFs considered. Number of EOFs used in the decomposition is calculated by program.
-[perc]
+#[perc]
 80
 
 
@@ -87,12 +87,16 @@ True
 [numclus]
 4
 
+# Try to determine the best number of clusters according to Dunn and Davies-Bouldin indexes? (If True, a plot of the various indexes is produced, but no final maps)
+[check_best_numclus]
+False
+
 ##########################################################################
 ############## Options for the analysis ################
 
 # Name of the variable to be extracted from the fields
 [varname]
-2t
+tprate
 
 # Atmospheric level at which the variable is extracted (if more levels are present)
 #[level]

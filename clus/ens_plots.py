@@ -143,9 +143,15 @@ def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = N
     # namef=os.path.join(OUTPUTdir,'labels_{}.txt'.format(name_outputs))
     # labels=np.loadtxt(namef,dtype=int)
     # print(labels)
+    if observation is not None:
+        reference = vartoplot3
+        reference_sigma = vartoplot4
+    else:
+        reference = vartoplot
+        reference_sigma = vartoplot2
 
-    mi = np.percentile(vartoplot, 5)
-    ma = np.percentile(vartoplot, 95)
+    mi = np.percentile(reference, 5)
+    ma = np.percentile(reference, 95)
     oko = max(abs(mi), abs(ma))
     spi = 2*oko/(n_color_levels-1)
     spi_ok = np.ceil(spi*100)/100
@@ -157,8 +163,8 @@ def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = N
     print('levels', len(clevels), min(clevels), max(clevels))
 
     if inputs['clim_sigma_value'] is not None:
-        mi = np.percentile(vartoplot4, 5)
-        ma = np.percentile(vartoplot4, 95)
+        mi = np.percentile(reference_sigma, 5)
+        ma = np.percentile(reference_sigma, 95)
         oko = max(abs(mi), abs(ma))
         clevels_sigma = np.linspace(-math.ceil(oko*100)/100, math.ceil(oko*100)/100, n_color_levels)
 

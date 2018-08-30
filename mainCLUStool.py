@@ -22,6 +22,8 @@ import sys
 from read_inputs import read_inputs
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 # User-defined packages
 prog_folder = os.path.dirname(os.path.abspath(__file__))
@@ -39,9 +41,9 @@ if len(sys.argv) > 1:
 else:
     file_input = 'input_CLUStool.in'
 
-keys = 'INPUT_PATH string_name dir_OUTPUT exp_name varname model timestep level season area extreme numclus perc numpcs field_to_plot n_color_levels n_levels draw_contour_lines overwrite_output clim_compare obs_compare climat_file climat_std obs_file cmap cmap_cluster clim_sigma_value cb_label medscope_run medscope_year_pred fig_format max_ens_in_fig'
+keys = 'INPUT_PATH string_name dir_OUTPUT exp_name varname model timestep level season area extreme numclus perc numpcs field_to_plot n_color_levels n_levels draw_contour_lines overwrite_output clim_compare obs_compare climat_file climat_std obs_file cmap cmap_cluster clim_sigma_value cb_label medscope_run medscope_year_pred fig_format max_ens_in_fig check_best_numclus'
 keys = keys.split()
-itype = [str, str, str, str, str, str, str, float, str, str, str, int, float, int, str, int, int, bool, bool, bool, bool, str, str, str, str, str, float, str, bool, int, str, int]
+itype = [str, str, str, str, str, str, str, float, str, str, str, int, float, int, str, int, int, bool, bool, bool, bool, str, str, str, str, str, float, str, bool, int, str, int, bool]
 
 if len(itype) != len(keys):
     raise RuntimeError('Ill defined input keys in {}'.format(__file__))
@@ -59,6 +61,7 @@ defaults['cmap'] = 'RdBu_r'
 defaults['cmap_cluster'] = 'nipy_spectral'
 defaults['fig_format'] = 'pdf'
 defaults['max_ens_in_fig'] = 30
+defaults['check_best_numclus'] = False
 
 
 inputs = read_inputs(file_input, keys, n_lines = None, itype = itype, defaults = defaults, verbose = True)
@@ -85,6 +88,13 @@ if inputs['medscope_run']:
 
     inputs['climat_std'] = inputs['INPUT_PATH']+'climatology_std_{}_1993-2016.nc'.format(month_pred)
     print('Setting climat_std: '+inputs['climat_std']+'\n')
+
+    if inputs['varname'] == '2t':
+        inputs['cmap'] = 'RdBu_r'
+        inputs['cb_label'] = 'Temperature anomaly (K)'
+    elif inputs['varname'] == 'tprate':
+        inputs['cmap'] = 'RdBu'
+        inputs['cb_label'] = 'Precipitation anomaly (mm/day)'
 
 
 OUTPUTdir=inputs['dir_OUTPUT']+'OUT_'+inputs['model']+'_'+inputs['exp_name']+'/'
@@ -114,6 +124,19 @@ else:
         B2.pack()
         top.mainloop()
 
+if inputs['check_best_numclus']:
+    clus = 'bestnumclus'
+else:
+    clus = '{}clus'.format(inputs['numclus'])
+
+if inputs['numpcs'] is not None:
+    npcs = '{}pcs'.format(inputs['numpcs'])
+else:
+    npcs = '{}perc'.format(inputs['perc'])
+
+OUTPUTdir = OUTPUTdir + 'OUT_{}_'.format(inputs['varname']) + npcs + '_' + clus + '/'
+if not os.path.exists(OUTPUTdir):
+    os.mkdir(OUTPUTdir)
 
 #print('The name of the output files will be <variable>_{0}.ext'.format(name_outputs))
 
@@ -234,11 +257,54 @@ if inputs['obs_compare']:
 
 ####################### EOF AND K-MEANS ANALYSES #############################
 #____________run ens_eof_kmeans as a module
-centroids, labels, ens_mindist, ens_maxdist = ens_eof_kmeans(inputs)
+if inputs['check_best_numclus']:
+    print('Trying to determine best number of clusters..\n')
+    indicators = []
+    numclus_all = range(2,11)
+    for numc in numclus_all:
+        inputs['numclus'] = numc
+        centroids, labels, ens_mindist, ens_maxdist, clus_eval = ens_eof_kmeans(inputs)
+        indicators.append(clus_eval)
 
-####################### PLOT AND SAVE FIGURES ################################
-#____________run ens_plots as a module
-ens_plots(inputs, labels, ens_mindist, climatology = climatology, ensemble_mean = ensemble_mean, observation = observation)
+    kiavi = clus_eval['Indexes'].keys()
+    colors = []
+    cmappa_clus = cm.get_cmap(inputs['cmap_cluster'])
+    for cos in np.linspace(0.05,0.95,len(kiavi)):
+        colors.append(cmappa_clus(cos))
+
+    fig = plt.figure()
+    for indx, col in zip(kiavi, colors):
+        vals = [indica['Indexes'][indx] for indica in indicators]
+        vals = np.array(vals)/np.max(vals)
+        plt.plot(numclus_all, vals, label = None, color = col, linestyle = '--')
+        plt.scatter(numclus_all, vals, label = indx, s = 20, color = col)
+
+    plt.legend()
+    plt.grid()
+    plt.xlabel('Number of clusters')
+    plt.ylabel('Normalized Indicator')
+    fig.savefig(OUTPUTdir + 'Test_best_numclus_normalized.pdf')
+    plt.close(fig)
+
+    fig = plt.figure()
+    for indx, col in zip(kiavi, colors):
+        if 'Variance' in indx: continue
+        vals = [indica['Indexes'][indx] for indica in indicators]
+        plt.plot(numclus_all, vals, label = None, color = col, linestyle = '--')
+        plt.scatter(numclus_all, vals, label = indx, s = 20, color = col)
+
+    plt.legend()
+    plt.grid()
+    plt.xlabel('Number of clusters')
+    plt.ylabel('Indicator')
+    fig.savefig(OUTPUTdir + 'Test_best_numclus.pdf')
+    plt.close(fig)
+
+else:
+    centroids, labels, ens_mindist, ens_maxdist, clus_eval = ens_eof_kmeans(inputs)
+
+####################### PLOT AND SAVE FIGURES ########
+    ens_plots(inputs, labels, ens_mindist, climatology = climatology, ensemble_mean = ensemble_mean, observation = observation)
 
 print('\n>>>>>>>>>>>> ENDED SUCCESSFULLY!! <<<<<<<<<<<<\n')
 

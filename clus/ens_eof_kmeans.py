@@ -11,6 +11,111 @@ import datetime
 import math
 import pandas as pd
 import collections
+from itertools import combinations
+from numpy import linalg as LA
+
+
+def clus_eval_indexes(elements, centroids, labels):
+    """
+    Computes clustering evaluation indexes, as the Davies-Bouldin Index, the Dunn Index, the optimal variance ratio and the Silhouette value. Also computes cluster sigmas and distances.
+    """
+    PCs = elements
+    ### Computing clustering evaluation Indexes
+    numclus = len(centroids)
+    inertia_i = np.empty(numclus)
+    for i in range(numclus):
+        lab_clus = labels == i
+        inertia_i[i] = np.sum([np.sum((pcok-centroids[i])**2) for pcok in PCs[lab_clus]])
+
+    clus_eval = dict()
+    clus_eval['Indexes'] = dict()
+
+    # Optimal ratio
+
+    n_clus = np.empty(numclus)
+    for i in range(numclus):
+        n_clus[i] = np.sum(labels == i)
+
+    mean_intra_clus_variance = np.sum(inertia_i)/len(labels)
+
+    dist_couples = dict()
+    coppie = list(combinations(range(numclus), 2))
+    for (i,j) in coppie:
+        dist_couples[(i,j)] = LA.norm(centroids[i]-centroids[j])
+
+    mean_inter_clus_variance = np.sum(np.array(dist_couples.values())**2)/len(coppie)
+
+    clus_eval['Indexes']['Inter-Intra Variance ratio'] = mean_inter_clus_variance/mean_intra_clus_variance
+
+    sigma_clusters = np.sqrt(inertia_i/n_clus)
+    clus_eval['Indexes']['Inter-Intra Distance ratio'] = np.mean(dist_couples.values())/np.mean(sigma_clusters)
+
+    # Davies-Bouldin Index
+    R_couples = dict()
+    for (i,j) in coppie:
+        R_couples[(i,j)] = (sigma_clusters[i]+sigma_clusters[j])/dist_couples[(i,j)]
+
+    DBI = 0.
+    for i in range(numclus):
+        coppie_i = [coup for coup in coppie if i in coup]
+        Di = np.max([R_couples[cop] for cop in coppie_i])
+        DBI += Di
+
+    DBI /= numclus
+    clus_eval['Indexes']['Davies-Bouldin'] = DBI
+
+    # Dunn Index
+
+    Delta_clus = np.empty(numclus)
+    for i in range(numclus):
+        lab_clus = labels == i
+        distances = [LA.norm(pcok-centroids[i]) for pcok in PCs[lab_clus]]
+        Delta_clus[i] = np.sum(distances)/n_clus[i]
+
+    clus_eval['Indexes']['Dunn'] = np.min(dist_couples.values())/np.max(Delta_clus)
+
+    clus_eval['Indexes']['Dunn 2'] = np.min(dist_couples.values())/np.max(sigma_clusters)
+
+    # Silhouette
+    sils = []
+    for ind, el, lab in zip(range(len(PCs)), PCs, labels):
+        lab_clus = labels == lab
+        lab_clus[ind] = False
+        ok_Pcs = PCs[lab_clus]
+        a = np.sum([LA.norm(okpc - el) for okpc in ok_Pcs])/n_clus[lab]
+
+        bs = []
+        others = range(numclus)
+        others.remove(lab)
+        for lab_b in others:
+            lab_clus = labels == lab_b
+            ok_Pcs = PCs[lab_clus]
+            b = np.sum([LA.norm(okpc - el) for okpc in ok_Pcs])/n_clus[lab_b]
+            bs.append(b)
+
+        b = np.min(bs)
+        sils.append((b-a)/max([a,b]))
+
+    sils = np.array(sils)
+    sil_clus = []
+    for i in range(numclus):
+        lab_clus = labels == i
+        popo = np.sum(sils[lab_clus])/n_clus[i]
+        sil_clus.append(popo)
+
+    siltot = np.sum(sil_clus)/numclus
+
+    clus_eval['Indexes']['Silhouette'] = siltot
+    clus_eval['clus_silhouettes'] = sil_clus
+
+    clus_eval['Indexes']['Dunn2/DB'] = clus_eval['Indexes']['Dunn 2']/clus_eval['Indexes']['Davies-Bouldin']
+
+    clus_eval['R couples'] = R_couples
+    clus_eval['Inter cluster distances'] = dist_couples
+    clus_eval['Sigma clusters'] = sigma_clusters
+
+    return clus_eval
+
 
 def ens_eof_kmeans(inputs):
     '''
@@ -94,6 +199,7 @@ def ens_eof_kmeans(inputs):
 
     centroids=clus.cluster_centers_          # shape---> (numclus,numpcs)
     labels=clus.labels_                      # shape---> (numens,)
+    inertia = clus.inertia_
 
     ## Ordering clusters for number of members
     centroids = np.array(centroids)
@@ -112,6 +218,9 @@ def ens_eof_kmeans(inputs):
         labels_new[labels == i] = nu
     labels = labels_new
     ###
+    clus_eval = clus_eval_indexes(PCs, centroids, labels)
+    for nam in clus_eval['Indexes'].keys():
+        print(nam, clus_eval['Indexes'][nam])
 
     print('\nClusters are identified for {0} PCs (explained variance {1}%)'.format(numpcs, "%.2f" %exctperc))
     print('PCs dim: (number of ensemble members, number of PCs)={0}, EOF dim: (number of ensemble members, lat, lon)={1}'.format(pcs_unscal0[:,:numpcs].shape,eofs_unscal0[:numpcs].shape))
@@ -235,7 +344,7 @@ def ens_eof_kmeans(inputs):
     with open(namef, 'w') as text_file:
         text_file.write(statOUTPUT.__repr__())
 
-    return centroids, labels, ens_mindist, ens_maxdist
+    return centroids, labels, ens_mindist, ens_maxdist, clus_eval
 
 
 #========================================================
