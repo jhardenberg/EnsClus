@@ -19,7 +19,7 @@ True
 
 # Season to be selected (options: JJA, DJF, DJFM, NDJFM, MAM, SON). The code accepts also single months, named in this way: Jan, Feb, Mar, ...
 [season]
-Feb
+JJA
 
 # Only for MEDSCOPE runs.
 # Year of the prediction. (The year in which the season starts. For example, to analyze 2012 winter, year has to be set to 2011.)

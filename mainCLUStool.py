@@ -129,7 +129,7 @@ class Tee(object):
         for f in self.files:
             f.flush()
 
-f = open(OUTPUTdir+'log_file.log', 'w')
+f = open(OUTPUTdir+'log_file_{}clus.log'.format(inputs['numclus']), 'w')
 original = sys.stdout
 sys.stdout = Tee(sys.stdout, f)
 
@@ -159,7 +159,7 @@ if season is None:
     sea = ''
 else:
     sea = season
-seq = (inputs['varname'],inputs['model'],str(inputs['numens'])+'ens',sea,inputs['area'])
+seq = (inputs['varname'],inputs['model'],str(inputs['numens'])+'ens',sea,inputs['area'],str(inputs['numclus'])+'clus')
 name_outputs=s.join(seq)
 
 inputs['name_outputs'] = name_outputs

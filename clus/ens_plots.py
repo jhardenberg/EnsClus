@@ -134,7 +134,7 @@ def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = N
 
     # print(vartoplot2.shape)
     # print(vartoplot.shape)
-    ofile = OUTPUTdir + 'Clusters_closest_ensmember.nc'
+    ofile = OUTPUTdir + 'Clusters_closest_ensmember_{}.nc'.format(name_outputs)
     print('Saving clustern anomalies (vs model climatology)\n')
     okins = [cos[0] for cos in ens_mindist]
     save_N_2Dfields(lat,lon,vartoplot[okins],'clus_anom_closer',varunits,ofile)
