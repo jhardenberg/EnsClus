@@ -88,6 +88,9 @@ def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = N
     cmappa = cm.get_cmap(inputs['cmap'])
     cmappa_clus = cm.get_cmap(inputs['cmap_cluster'])
 
+    # cmappa.set_under('violet')
+    # cmappa.set_over('brown')
+
     OUTPUTdir = inputs['OUTPUTdir']
     numens = inputs['numens']
     name_outputs = inputs['name_outputs']
@@ -109,6 +112,8 @@ def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = N
     ifile=os.path.join(OUTPUTdir,'ens_anomalies_{}.nc'.format(name_outputs))
     vartoplot, varunits, lat, lon = read_N_2Dfields(ifile)
     print('vartoplot dim: (numens x lat x lon)={}'.format(vartoplot.shape))
+
+    print('Unitssssss',varunits)
 
     print(vartoplot.shape)
     print(ensemble_mean.shape)
@@ -143,7 +148,7 @@ def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = N
     # namef=os.path.join(OUTPUTdir,'labels_{}.txt'.format(name_outputs))
     # labels=np.loadtxt(namef,dtype=int)
     # print(labels)
-    if observation is not None:
+    if observation is not None and inputs['fig_ref_to_obs']:
         reference = vartoplot3
         reference_sigma = vartoplot4
     else:
@@ -212,12 +217,22 @@ def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = N
             # Add Title
             subtit = nens
             # title_obj=plt.title(subtit, fontsize=20, fontweight='bold', loc = 'left')
-            title_obj = plt.text(-0.05, 1.05, subtit, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20, fontweight='bold')
+            title_obj = plt.text(-0.05, 1.05, subtit, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20, fontweight='bold', zorder = 20)
             for nclus in range(numclus):
                 if nens in np.where(labels==nclus)[0]:
-                    bbox=dict(facecolor=colors[nclus], alpha = 0.5, edgecolor='black', boxstyle='round,pad=0.2')
+                    okclus = nclus
+                    bbox=dict(facecolor=colors[nclus], alpha = 0.7, edgecolor='black', boxstyle='round,pad=0.2')
                     title_obj.set_bbox(bbox)
                     #title_obj.set_backgroundcolor(colors[nclus])
+
+            if nens == ens_mindist[okclus][0]:
+                #print('piruuuuuuuuuuuuuuuuuuuuuuuuuuuuu', okclus, nens)
+                #rect = ax.patch
+                rect = plt.Rectangle((-0.01,-0.01), 1.02, 1.02, fill = False, transform = ax.transAxes, clip_on = False, zorder = 10)#joinstyle='round')
+                rect.set_edgecolor(colors[okclus])
+                rect.set_linewidth(6.0)
+                ax.add_artist(rect)
+                #plt.draw()
 
         cax = plt.axes([0.1, 0.06, 0.8, 0.03]) #horizontal
         cb = plt.colorbar(map_plot,cax=cax, orientation='horizontal')#, labelsize=18)

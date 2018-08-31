@@ -11,7 +11,11 @@ IMPORTANT NOTE: the value of the keys has to be written in the line that immedia
 
 # Directory that contains all files to be analized
 [INPUT_PATH]
-/home/fabiano/DATA/Medscope/seasonal_forecasts_1d5/input_par228_1ens/
+/home/fabiano/DATA/Medscope/seasonal_forecasts_1d5/input_par167_1ens/
+
+# Name of the variable to be extracted from the fields (2t, tprate)
+[varname]
+2t
 
 # Is this a Medscope run? If True, once determined the season and the year, the code automatically sets exp_name, string_name, climat_file and climat_std.
 [medscope_run]
@@ -65,7 +69,7 @@ True
 
 # Compare with Observations?
 [obs_compare]
-False
+True
 
 # Observation file. Anomalies with respect to the observed climatology.
 [obs_file]
@@ -94,10 +98,6 @@ False
 ##########################################################################
 ############## Options for the analysis ################
 
-# Name of the variable to be extracted from the fields
-[varname]
-tprate
-
 # Atmospheric level at which the variable is extracted (if more levels are present)
 #[level]
 500
@@ -125,6 +125,10 @@ pdf
 # Number of color levels to be used in the contour plots.
 [n_color_levels]
 21
+
+# Calibrate the color scale on the observed anomaly? (True gives true rendering of the observed/modeled difference, but may hide the difference between clusters if the observed anomaly is much larger.)
+[fig_ref_to_obs]
+False
 
 # Draw contour lines?
 [draw_contour_lines]

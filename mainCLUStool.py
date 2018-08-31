@@ -41,9 +41,9 @@ if len(sys.argv) > 1:
 else:
     file_input = 'input_CLUStool.in'
 
-keys = 'INPUT_PATH string_name dir_OUTPUT exp_name varname model timestep level season area extreme numclus perc numpcs field_to_plot n_color_levels n_levels draw_contour_lines overwrite_output clim_compare obs_compare climat_file climat_std obs_file cmap cmap_cluster clim_sigma_value cb_label medscope_run medscope_year_pred fig_format max_ens_in_fig check_best_numclus'
+keys = 'INPUT_PATH string_name dir_OUTPUT exp_name varname model timestep level season area extreme numclus perc numpcs field_to_plot n_color_levels n_levels draw_contour_lines overwrite_output clim_compare obs_compare climat_file climat_std obs_file cmap cmap_cluster clim_sigma_value cb_label medscope_run medscope_year_pred fig_format max_ens_in_fig check_best_numclus fig_ref_to_obs'
 keys = keys.split()
-itype = [str, str, str, str, str, str, str, float, str, str, str, int, float, int, str, int, int, bool, bool, bool, bool, str, str, str, str, str, float, str, bool, int, str, int, bool]
+itype = [str, str, str, str, str, str, str, float, str, str, str, int, float, int, str, int, int, bool, bool, bool, bool, str, str, str, str, str, float, str, bool, int, str, int, bool, bool]
 
 if len(itype) != len(keys):
     raise RuntimeError('Ill defined input keys in {}'.format(__file__))
@@ -62,11 +62,14 @@ defaults['cmap_cluster'] = 'nipy_spectral'
 defaults['fig_format'] = 'pdf'
 defaults['max_ens_in_fig'] = 30
 defaults['check_best_numclus'] = False
-
+defaults['fig_ref_to_obs'] = False
 
 inputs = read_inputs(file_input, keys, n_lines = None, itype = itype, defaults = defaults, verbose = True)
 
 if inputs['medscope_run']:
+    indp = inputs['INPUT_PATH'].index('par')
+    numpar = int(inputs['INPUT_PATH'][indp+3:indp+6])
+
     print('Medscope run active. Setting standard names.\n')
     if inputs['medscope_year_pred'] is None:
         raise ValueError('[medscope_year_pred] not set!')
@@ -90,10 +93,22 @@ if inputs['medscope_run']:
     print('Setting climat_std: '+inputs['climat_std']+'\n')
 
     if inputs['varname'] == '2t':
-        inputs['cmap'] = 'RdBu_r'
+        if numpar != 167:
+            raise ValueError('Check INPUT_PATH. numpar is {} but variable is {}'.format(numpar, '2t'))
+        if inputs['obs_compare'] and inputs['fig_ref_to_obs']:
+            inputs['cmap'] = 'seismic'
+            inputs['n_color_levels'] += 10
+        else:
+            inputs['cmap'] = 'RdBu_r'
         inputs['cb_label'] = 'Temperature anomaly (K)'
     elif inputs['varname'] == 'tprate':
-        inputs['cmap'] = 'RdBu'
+        if numpar != 228:
+            raise ValueError('Check INPUT_PATH. numpar is {} but variable is {}'.format(numpar, 'tprate'))
+        if inputs['obs_compare'] and inputs['fig_ref_to_obs']:
+            inputs['cmap'] = 'seismic_r'
+            inputs['n_color_levels'] += 10
+        else:
+            inputs['cmap'] = 'RdBu'
         inputs['cb_label'] = 'Precipitation anomaly (mm/day)'
 
 
@@ -127,14 +142,19 @@ else:
 if inputs['check_best_numclus']:
     clus = 'bestnumclus'
 else:
-    clus = '{}clus'.format(inputs['numclus'])
+    clus = '_{}clus'.format(inputs['numclus'])
 
 if inputs['numpcs'] is not None:
-    npcs = '{}pcs'.format(inputs['numpcs'])
+    npcs = '_{}pcs'.format(inputs['numpcs'])
 else:
-    npcs = '{}perc'.format(inputs['perc'])
+    npcs = '_{}perc'.format(int(inputs['perc']))
 
-OUTPUTdir = OUTPUTdir + 'OUT_{}_'.format(inputs['varname']) + npcs + '_' + clus + '/'
+if inputs['obs_compare'] and inputs['fig_ref_to_obs']:
+    ref = '_refobs'
+else:
+    ref = '_refmod'
+
+OUTPUTdir = OUTPUTdir + 'OUT_{}'.format(inputs['varname']) + npcs + clus + ref + '/'
 if not os.path.exists(OUTPUTdir):
     os.mkdir(OUTPUTdir)
 
