@@ -9,12 +9,16 @@ from netCDF4 import Dataset
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import matplotlib.patheffects as PathEffects
 import cartopy.crs as ccrs
 #from mpl_toolkits.basemap import Basemap
 import math
 from numpy import linalg as LA
 import pickle
 
+
+def color_brightness(color):
+    return (color[0] * 299 + color[1] * 587 + color[2] * 114)/1000
 
 def Rcorr(x,y):
     """
@@ -174,8 +178,19 @@ def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = N
         clevels_sigma = np.linspace(-math.ceil(oko*100)/100, math.ceil(oko*100)/100, n_color_levels)
 
     colors = []
-    for cos in np.linspace(0.05,0.95,numclus):
+    valori = np.linspace(0.05,0.95,numclus)
+    for cos in valori:
         colors.append(cmappa_clus(cos))
+
+    for i, (col,val) in enumerate(zip(colors, valori)):
+        #print(col, color_brightness(col))
+        if color_brightness(col) > 0.6:
+            #print('Looking for darker color')
+            col2 = cmappa_clus(val+1.0/(3*numclus))
+            col3 = cmappa_clus(val-1.0/(3*numclus))
+            colori = [col, col2, col3]
+            brighti = np.array([color_brightness(co) for co in colori]).argmin()
+            colors[i] = colori[brighti]
     #colors = ['b','g','r','c','m','y','DarkOrange','grey']
 
     clat=lat.min()+abs(lat.max()-lat.min())/2
@@ -389,6 +404,40 @@ def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = N
         namef=os.path.join(OUTPUTdir,'Observed_anomaly_{}.{}'.format(name_outputs, inputs['fig_format']))
         fig4.savefig(namef)#bbox_inches='tight')
 
+        fig4 = plt.figure(figsize=(8,6))
+        ax = plt.subplot(projection=proj)
+
+        ax.set_global()
+        ax.coastlines(linewidth = 2)
+        xi,yi=np.meshgrid(lon,lat)
+
+        varensmean = ensemble_mean - climatology
+        map_plot = ax.contourf(xi,yi,varensmean,clevels,cmap=cmappa, transform = proj, extend = 'both')
+        if draw_contour_lines:
+            map_plot_lines = ax.contour(xi,yi,varensmean, n_levels, colors = 'k', transform = proj, linewidth = 0.5)
+
+        latlonlim = [lon.min(), lon.max(), lat.min(), lat.max()]
+        ax.set_extent(latlonlim, crs = proj)
+
+        title_obj=plt.title('Ensemble mean', fontsize=20, fontweight='bold')
+        title_obj.set_position([.5, 1.05])
+
+        cax = plt.axes([0.1, 0.11, 0.8, 0.05]) #horizontal
+        cb = plt.colorbar(map_plot,cax=cax, orientation='horizontal')#, labelsize=18)
+        cb.ax.tick_params(labelsize=14)
+        cb.set_label(inputs['cb_label'], fontsize=16)
+
+        top    = 0.88  # the top of the subplots of the figure
+        bottom = 0.20    # the bottom of the subplots of the figure
+        left   = 0.02    # the left side of the subplots of the figure
+        right  = 0.98  # the right side of the subplots of the figure
+        hspace = 0.20   # the amount of height reserved for white space between subplots
+        wspace = 0.05    # the amount of width reserved for blank space between subplots
+        plt.subplots_adjust(left=left, bottom=bottom, right=right, top=top, wspace=wspace, hspace=hspace)
+
+        # plot the selected fields
+        namef=os.path.join(OUTPUTdir,'Ensemble_mean_{}.{}'.format(name_outputs, inputs['fig_format']))
+        fig4.savefig(namef)#bbox_inches='tight')
 
         fig5 = plt.figure(figsize=(8,6))
         ax = plt.subplot(projection=proj)
@@ -427,9 +476,12 @@ def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = N
 
         # Making the Taylor-like graph
         # Polar plot with
+        bgcol = 'white'
+
         fig6 = plt.figure(figsize=(8,6))
         ax = fig6.add_subplot(111, polar = True)
         plt.title('Taylor diagram: predictions vs observed')
+        ax.set_facecolor(bgcol)
 
         ax.set_thetamin(0)
         ax.set_thetamax(180)
@@ -441,21 +493,49 @@ def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = N
         angles = np.arccos(corrs_pred)
         print(corrs_pred.max(), corrs_pred.min())
 
-        ax.scatter(angles, sigmas_pred, s = 10, color = colors_all)
-        ax.scatter([0.], [sigma_obs], color = 'black', s = 40, clip_on=False)
-
         repr_ens = []
         for clu in range(numclus):
             repr_ens.append(ens_mindist[clu][0])
 
-        ax.scatter(angles[repr_ens], sigmas_pred[repr_ens], color = colors, edgecolor = 'black', s = 40)
+        ax.scatter([0.], [sigma_obs], color = 'black', s = 40, clip_on=False)
+
+        only_numbers = False
+
+        if not inputs['taylor_w_numbers']:
+            ax.scatter(angles, sigmas_pred, s = 10, color = colors_all)
+            ax.scatter(angles[repr_ens], sigmas_pred[repr_ens], color = colors, edgecolor = 'black', s = 40)
+        else:
+            #ax.scatter(angles[repr_ens], sigmas_pred[repr_ens], color = colors, edgecolor = 'black', s = 40, zorder = 20)
+            if only_numbers:
+                ax.scatter(angles, sigmas_pred, s = 0, color = colors_all)
+                for i, (ang, sig, col) in enumerate(zip(angles, sigmas_pred, colors_all)):
+                    zord = 5
+                    siz = 3
+                    if i in repr_ens:
+                        zord = 21
+                        siz = 4
+                    gigi = ax.text(ang, sig, i, ha="center", va="center", color = col, fontsize = siz, zorder = zord, weight = 'bold')
+            else:
+                #ax.scatter(angles, sigmas_pred, s = 0, color = colors_all)
+                #ax.scatter(angles[repr_ens], sigmas_pred[repr_ens], color = colors, edgecolor = col, s = 0)
+                for i, (ang, sig, col) in enumerate(zip(angles, sigmas_pred, colors_all)):
+                    zord = i + 1
+                    siz = 4
+                    if i in repr_ens:
+                        zord = zord + numens
+                        siz = 5
+                        ax.scatter(ang, sig, color = col, alpha = 0.7, s = 60, zorder = zord, edgecolor = col)
+                    else:
+                        ax.scatter(ang, sig, s = 30, color = col, zorder = zord, alpha = 0.7)
+                    gigi = ax.text(ang, sig, i, ha="center", va="center", color = 'white', fontsize = siz, zorder = zord, WEIGHT = 'bold')
+
 
         ok_cos = np.array([-0.99, -0.95, -0.9, -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 0.9, 0.95, 0.99])
         labgr = ['{:4.2f}'.format(co) for co in ok_cos]
         anggr = np.rad2deg(np.arccos(ok_cos))
 
         #ax.grid()
-        plt.thetagrids(anggr, labels=labgr, frac = 1.1)
+        plt.thetagrids(anggr, labels=labgr, frac = 1.1, zorder = 0)
 
         for sig in [1., 2., 3.]:
             circle = plt.Circle((sigma_obs, 0.), sig*sigma_obs, transform=ax.transData._b, fill = False, edgecolor = 'black', linestyle = '--')# color="red", alpha=0.1-0.03*sig)
@@ -472,8 +552,9 @@ def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = N
 
         fig7 = plt.figure(figsize=(8,6))
         ax = fig7.add_subplot(111)
+        ax.set_facecolor(bgcol)
 
-        biases = np.array([np.mean(var) - np.mean(observation) for var in vartoplot])
+        biases = np.array([np.mean(var) for var in vartoplot])
         ctr_patt_RMS = np.array([E_rms_cp(var, observation) for var in vartoplot])
         RMS = np.array([E_rms(var, observation) for var in vartoplot])
 
@@ -484,24 +565,47 @@ def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = N
         min_rms = RMS.argmin()
         print('The member with smallest absolute RMS is member {} of cluster {}\n'.format(min_rms, labels[min_rms]))
         print('----------------------------\n')
-        min_bias = np.abs(biases).argmin()
-        print('The member with smallest absolute bias is member {} of cluster {}\n'.format(min_bias, labels[min_bias]))
+        min_bias = np.abs((biases - np.mean(observation))).argmin()
+        print('The member with closest mean anomaly is member {} of cluster {}\n'.format(min_bias, labels[min_bias]))
         print('----------------------------\n')
         max_corr = corrs_pred.argmax()
         print('The member with largest correlation coefficient is member {} of cluster {}\n'.format(max_corr, labels[max_corr]))
 
-        ax.scatter(biases, ctr_patt_RMS, color = colors_all, s =10)
-        ax.scatter(biases[repr_ens], ctr_patt_RMS[repr_ens], color = colors, edgecolor = 'black', s = 40)
+        if not inputs['taylor_w_numbers']:
+            ax.scatter(biases, ctr_patt_RMS, color = colors_all, s =10)
+            ax.scatter(biases[repr_ens], ctr_patt_RMS[repr_ens], color = colors, edgecolor = 'black', s = 40)
+        else:
+            if only_numbers:
+                ax.scatter(biases, ctr_patt_RMS, s = 0, color = colors_all)
+                for i, (ang, sig, col) in enumerate(zip(biases, ctr_patt_RMS, colors_all)):
+                    zord = 5
+                    siz = 7
+                    if i in repr_ens:
+                        zord = 21
+                        siz = 9
+                    gigi = ax.text(ang, sig, i, ha="center", va="center", color = col, fontsize = siz, zorder = zord, weight = 'bold')
+            else:
+                for i, (ang, sig, col) in enumerate(zip(biases, ctr_patt_RMS, colors_all)):
+                    zord = i + 1
+                    siz = 7
+                    if i in repr_ens:
+                        zord = zord + numens
+                        siz = 9
+                        ax.scatter(ang, sig, color = col, alpha = 0.7, s = 200, zorder = zord, edgecolor = col)
+                    else:
+                        ax.scatter(ang, sig, s = 120, color = col, zorder = zord, alpha = 0.7)
+                    gigi = ax.text(ang, sig, i, ha="center", va="center", color = 'white', fontsize = siz, zorder = zord, WEIGHT = 'bold')
 
-        plt.xlabel('Bias (K)')
+
+        plt.xlabel('Mean anomaly (K) (wrt 1993-2016 average)')
         plt.ylabel('Centered-pattern RMS difference [E\'] (K)')
 
         for sig in [1., 2., 3.]:
-            circle = plt.Circle((0., 0.), sig*sigma_obs, fill = False, edgecolor = 'black', linestyle = '--')
+            circle = plt.Circle((np.mean(observation), 0.), sig*sigma_obs, fill = False, edgecolor = 'black', linestyle = '--')
             ax.add_artist(circle)
 
-        plt.scatter(0., 0., color = 'black', s = 40)
-        #plt.grid()
+        plt.scatter(np.mean(observation), 0., color = 'black', s = 120, zorder = 5)
+        plt.grid()
 
         # if plt.ylim()[1] < 0.:
         #     ax.set_ylim(ymax=0.)

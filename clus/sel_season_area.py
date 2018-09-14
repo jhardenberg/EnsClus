@@ -63,8 +63,12 @@ def sel_season(var,dates,season,timestep):
             print(np.where(dates_season==datetime(dates_pdh.year[0], m[0], dates_pdh.day[0], dates_pdh.hour[0], dates_pdh.minute[0]) ))
             start=int(np.where(dates_season==datetime(dates_pdh.year[0], m[0], dates_pdh.day[0], dates_pdh.hour[0], dates_pdh.minute[0]) )[0])
             #REMOVING THE LAST MONTHS (for the last year) because there is no following january
-            print(np.where(dates_season==datetime(dates_pdh.year[-1], m[0], dates_pdh.day[0], dates_pdh.hour[0], dates_pdh.minute[0]) ))
-            end=int(np.where(dates_season == datetime(dates_pdh.year[-1], m[0], dates_pdh.day[0], dates_pdh.hour[0], dates_pdh.minute[0]) )[0])
+            last_sea = dates_season==datetime(dates_pdh.year[-1], m[0], dates_pdh.day[0], dates_pdh.hour[0], dates_pdh.minute[0])
+
+            if np.sum(last_sea) > 0:
+                end = np.argmax(last_sea)
+            else:
+                end = -1
 
             var_season=var_season[start:end,:,:]
             dates_season=dates_season[start:end]

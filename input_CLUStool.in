@@ -154,3 +154,7 @@ Temperature anomaly (K)
 # Max number of ens. member plotted in the same figure:
 [max_ens_in_fig]
 30
+
+# Use numbers to label points in the Taylor plots.
+[taylor_w_numbers]
+True
