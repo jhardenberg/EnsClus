@@ -17,7 +17,7 @@ def ens_anom(inputs):
     '''
 
     # User-defined packages
-    from read_netcdf import read3Dncfield, save_N_2Dfields
+    from read_netcdf import read3Dncfield, save_N_2Dfields, readxDncfield
     from sel_season_area import sel_season, sel_area
 
     OUTPUTdir = inputs['OUTPUTdir']
@@ -38,7 +38,21 @@ def ens_anom(inputs):
     for ens in range(numens):
         ifile=filenames[ens]
         print('ENSEMBLE MEMBER %s' %ens)
-        var, lat, lon, dates, time_units, varunits = read3Dncfield(ifile)
+        #var, lat, lon, dates, time_units, varunits = read3Dncfield(ifile)
+        print(ifile)
+        varss, lat, lon, dates, time_units, varunitsss, time_cal = readxDncfield(ifile)
+        print(varss.keys())
+        print(varunitsss)
+        if len(varss.keys()) == 1:
+            var = varss.values()[0]
+            varunits = varunitsss.values()[0]
+        else:
+            try:
+                var = varss[varname]
+                varunits = varunitsss[varname]
+            except KeyError as ke:
+                print('Unable to find right variable among the following: {}\n'.format(varss.keys()))
+                raise ke
 
         #____________Convertion from kg m-2 s-1 to mm/day
         if varunits=='kg m-2 s-1':

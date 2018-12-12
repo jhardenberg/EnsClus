@@ -134,12 +134,15 @@ def ens_plots(inputs, labels, ens_mindist, climatology = None, ensemble_mean = N
             vartoplot_new.append(var + ensemble_mean - climatology)
         vartoplot = np.array(vartoplot_new)
 
-    if inputs['clim_sigma_value'] is not None:
-        print('Plotting anomalies in term of the model sigma {}\n'.format(inputs['clim_sigma_value']))
-        vartoplot2 = vartoplot/inputs['clim_sigma_value']
+    ensemble_std = np.std(vartoplot)
+    if inputs['clim_sigma_value'] is None:
+        inputs['clim_sigma_value'] = ensemble_std
 
-        if observation is not None:
-            vartoplot4 = observation/inputs['clim_sigma_value']
+    print('Plotting anomalies in term of the model sigma {}\n'.format(inputs['clim_sigma_value']))
+    vartoplot2 = vartoplot/inputs['clim_sigma_value']
+
+    if observation is not None:
+        vartoplot4 = observation/inputs['clim_sigma_value']
 
     # print(vartoplot2.shape)
     # print(vartoplot.shape)
