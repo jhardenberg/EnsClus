@@ -117,7 +117,7 @@ def ens_anom(inputs):
                 for lo in range(var_ens[0].shape[2]):
                     slope, intercept, r_value, p_value, std_err = stats.linregress(range(var_ens[0].shape[0]),var_ens[i][:,la,lo])
                     trendmap[la,lo]=slope
-            trendmap_ens.append(trendmap)
+            trendmap_ens.append(trendmap.copy())
         varextreme_ens = trendmap_ens
 
     print(len(varextreme_ens),varextreme_ens[0].shape)
